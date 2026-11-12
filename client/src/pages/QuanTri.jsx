@@ -1,6 +1,6 @@
 // Quản trị hệ thống: tài khoản và phân quyền (UC 1.1), nhật ký (UC 1.3).
 import { useState } from 'react';
-import { api } from '../api.js';
+import { api, taiVe } from '../api.js';
 import { BaoLoi, HopThoai, Nhan, TrangThaiTai, Truong, fmtGio, useTai, useThaoTac } from '../ui.jsx';
 
 function FormTaiKhoan({ tk, vaiTro, donVi, onDong, onXong }) {
@@ -34,9 +34,41 @@ function FormTaiKhoan({ tk, vaiTro, donVi, onDong, onXong }) {
 export function TaiKhoan() {
   const t = useTai(async () => { const [nd, vaiTro, donVi] = await Promise.all([api('/nguoidung'), api('/vaitro'), api('/donvi')]); return { nd, vaiTro, donVi }; });
   const [sua, setSua] = useState(null);
+  const [kqNhap, setKqNhap] = useState(null); // kết quả nhập Excel
+  const tt = useThaoTac();
+  // UC 1.2: tải tệp .xlsx theo mẫu, máy chủ kiểm tra từng dòng
+  const nhapExcel = (e) => {
+    const tep = e.target.files[0];
+    e.target.value = '';
+    if (!tep) return;
+    tt.chay(async () => {
+      const form = new FormData();
+      form.append('tep', tep);
+      setKqNhap(await api('/nguoidung-excel', { method: 'POST', form }));
+      await t.taiLai();
+    });
+  };
   return (
     <>
-      <div className="dau-trang"><h2>Tài khoản và phân quyền</h2><button className="nut chinh" onClick={() => setSua({})}>Tạo tài khoản</button></div>
+      <div className="dau-trang"><h2>Tài khoản và phân quyền</h2>
+        <div className="hang-nut">
+          <button className="nut" onClick={() => tt.chay(() => taiVe('/nguoidung-excel/mau', 'mau-nhap-tai-khoan.xlsx'))}>Tải tệp mẫu</button>
+          <label className="nut">{tt.dangChay ? 'Đang xử lý…' : 'Nhập từ Excel'}<input type="file" hidden accept=".xlsx" onChange={nhapExcel} disabled={tt.dangChay} /></label>
+          <button className="nut chinh" onClick={() => setSua({})}>Tạo tài khoản</button>
+        </div>
+      </div>
+      <BaoLoi loi={tt.loi} />
+      {kqNhap && (
+        <HopThoai tieuDe="Kết quả nhập tài khoản từ Excel" onDong={() => setKqNhap(null)} rong>
+          <p>Đã tạo <strong>{kqNhap.DaTao}</strong> tài khoản{kqNhap.DaTao > 0 && `: ${kqNhap.TaiKhoan.join(', ')}`}. Bỏ qua <strong>{kqNhap.BoQua.length}</strong> dòng.</p>
+          {kqNhap.BoQua.length > 0 && (
+            <table className="bang gon"><thead><tr><th className="so">Dòng</th><th>Tên đăng nhập</th><th>Lý do bỏ qua</th></tr></thead>
+              <tbody>{kqNhap.BoQua.map((b) => <tr key={b.Dong}><td className="so">{b.Dong}</td><td>{b.TenDangNhap || '—'}</td><td>{b.LyDo}</td></tr>)}</tbody></table>
+          )}
+          <p className="mo">Sửa các dòng bị bỏ qua trong tệp rồi nhập lại; dòng đã tạo sẽ bị báo trùng và không tạo lần hai.</p>
+          <div className="hang-nut"><button className="nut chinh" onClick={() => setKqNhap(null)}>Đóng</button></div>
+        </HopThoai>
+      )}
       <TrangThaiTai t={t}>{(d) => (
         <>
           <table className="bang">

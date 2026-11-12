@@ -183,6 +183,18 @@ function tinhMotGiao(nhoms, cs, bacs, bcs, giao, ky) {
   return { MaGiao: giao.MaGiao, MaDV: giao.MaDV, TenDV: giao.TenDV, MaLoaiDV: giao.MaLoaiDV, MaKy: ky.MaKy, TenKy: ky.TenKy, ...tong, ChiSo: chiSo };
 }
 
+// Điểm chi tiết của mọi lượt giao trong kỳ, nạp dữ liệu một lần (dùng cho so sánh, dashboard, xuất tệp)
+async function diemTatCa(trx, maKy) {
+  const ky = await layKy(trx, maKy);
+  const nhoms = await trx('NHOMCHISO').where({ MaBo: ky.MaBo }).orderBy('MaNhom');
+  const apDung = await chiSoApDung(trx, ky);
+  const maCS = [...new Set(apDung.map((c) => c.MaChiSo))];
+  const bacs = maCS.length ? await trx('BACDIEM').whereIn('MaChiSo', maCS) : [];
+  const giaos = await trx('GIAODONVI as g').join('DONVI as d', 'd.MaDV', 'g.MaDV').where({ 'g.MaKy': maKy }).select('g.*', 'd.TenDV', 'd.MaLoaiDV');
+  const bcs = await trx('BAOCAOSOLIEU as b').join('GIAODONVI as g', 'g.MaGiao', 'b.MaGiao').where({ 'g.MaKy': maKy }).select('b.*');
+  return giaos.map((g) => tinhMotGiao(nhoms, apDung.filter((c) => c.MaLoaiDV === g.MaLoaiDV), bacs, bcs.filter((b) => b.MaGiao === g.MaGiao), g, ky));
+}
+
 // UC 2.4 bước 2-3: kiểm tra điều kiện và thống kê trước khi chốt
 async function thongKeChot(trx, maKy, now = new Date()) {
   const ky = await layKy(trx, maKy);
@@ -279,4 +291,4 @@ async function nhacHan(db, now = new Date()) {
   return soTB;
 }
 
-module.exports = { hanHienHanh, daQuaHan, layKy, chiSoApDung, kiemTraMocNgay, taoKy, giaoDonVi, boGiao, moKy, giaHan, tienDo, chiTietDiem, thongKeChot, chotKy, ketQuaKy, nhacHan, ddmmyyyy };
+module.exports = { hanHienHanh, daQuaHan, layKy, chiSoApDung, kiemTraMocNgay, taoKy, giaoDonVi, boGiao, moKy, giaHan, tienDo, chiTietDiem, diemTatCa, thongKeChot, chotKy, ketQuaKy, nhacHan, ddmmyyyy };

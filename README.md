@@ -6,14 +6,14 @@
 
 Ứng dụng web đưa quy trình đánh giá chỉ số chuyển đổi số lên một hệ thống: cơ quan chủ trì khai báo bộ chỉ số và mở kỳ, đơn vị nhập số liệu kèm minh chứng, chuyên viên thẩm định, hệ thống tự tính điểm và xếp hạng khi chốt kỳ. Phần mềm cài đặt theo báo cáo phân tích thiết kế của đề tài: 19 bảng (Bảng 3.6), quy tắc nghiệp vụ BR01–BR25, ràng buộc RB01–RB20.
 
-Bản này là **đợt 1 — luồng chính**. Các chức năng để đợt 2 ghi ở cuối tệp.
+Bản này đã gồm **đợt 1 (luồng chính)** và **đợt 2** (nhập tài khoản bằng Excel, so sánh các kỳ, dashboard và xuất báo cáo): đủ 21 Use Case của báo cáo.
 
 ## Công nghệ
 
 | Phần | Công nghệ |
 |---|---|
 | Giao diện | React 18, React Router, Vite |
-| API | Node.js, Express, JWT, Multer (tải tệp) |
+| API | Node.js, Express, JWT, Multer (tải tệp), ExcelJS (đọc, ghi .xlsx) |
 | CSDL | SQL Server (qua Knex + tedious) |
 | Test | `node --test`, chạy trên SQLite tạm |
 
@@ -21,7 +21,7 @@ Bản này là **đợt 1 — luồng chính**. Các chức năng để đợt 2
 
 Cần Node.js 20 trở lên và SQL Server (bản Express hoặc Developer).
 
-**Chạy nhanh trên Windows:** mở `start.bat` ở thư mục dự án. Lần đầu chạy, tệp sẽ cài các thư viện còn thiếu, tạo `.env` dùng SQLite và nạp dữ liệu mẫu nếu chưa có CSDL, sau đó mở API, giao diện và trình duyệt. Cần Node.js 22.x; nếu máy chưa có Node 22, hãy cài Node.js 22 rồi chạy lại. Để dừng ứng dụng, mở `stop.bat` (đóng cả API lẫn giao diện), hoặc tự đóng hai cửa sổ API và Giao diện.
+**Chạy nhanh trên Windows:** mở `start.bat` ở thư mục dự án. Lần đầu chạy, tệp sẽ cài các thư viện còn thiếu, tạo `.env` dùng SQLite và nạp dữ liệu mẫu nếu chưa có CSDL, sau đó mở API, giao diện và trình duyệt. Cần Node.js 22.x; nếu máy chưa có Node 22, hãy cài Node.js 22 rồi chạy lại. Muốn nạp lại dữ liệu mẫu từ đầu, mở `reset-data.bat` (xóa toàn bộ dữ liệu hiện có). Để dừng ứng dụng, mở `stop.bat` (đóng cả API lẫn giao diện), hoặc tự đóng hai cửa sổ API và Giao diện.
 
 **1. Chuẩn bị SQL Server**
 
@@ -59,7 +59,7 @@ Muốn chạy một cổng duy nhất: `npm run build` trong `client`, sau đó 
 
 | Lệnh (trong `server`) | Tác dụng |
 |---|---|
-| `npm test` | Chạy 18 test logic tính điểm và luồng nghiệp vụ |
+| `npm test` | Chạy 22 test logic tính điểm và luồng nghiệp vụ |
 | `npm run db:reset` | Xóa hết bảng, tạo lại và nạp dữ liệu mẫu |
 | `npm run db:sql` | Xuất script T-SQL tạo bảng ra `database/is028_sqlserver.sql` |
 
@@ -84,6 +84,8 @@ Muốn chạy một cổng duy nhất: `npm run build` trong `client`, sau đó 
 ## Dữ liệu mẫu
 
 - Bộ chỉ số minh họa của Phụ lục B: 6 nhóm, 15 chỉ số CS01–CS15, đã ban hành.
+- **Kỳ năm 2024** — đã chốt, 5 đơn vị (chưa có Đặc khu C). Làm kỳ trước để so sánh với kỳ năm 2025.
+- **Kỳ quý 2 năm 2026** — đã chốt. Làm kỳ trước để so sánh với kỳ quý 3 sau khi chốt.
 - **Kỳ năm 2025** — đã chốt. UBND Xã B dùng đúng số liệu Bảng B.2 và ra **81,76 điểm** như báo cáo.
 - **Kỳ quý 3 năm 2026** — đang mở, đã qua hạn nộp: dùng thử thẩm định và chốt kỳ.
 - **Kỳ quý 4 năm 2026** — đang mở, còn hạn: dùng thử nhập số liệu, đính kèm, gửi, gia hạn.
@@ -105,7 +107,7 @@ server/
     seed.js            dữ liệu mẫu (tạo qua chính các hàm dịch vụ)
     lib/scoring.js     công thức tính điểm, xếp hạng, mức độ (hàm thuần)
     lib/dates.js       xử lý hạn đến 23:59:59 giờ Việt Nam
-    services/          nghiệp vụ: bochiso.js, ky.js, baocao.js
+    services/          nghiệp vụ: bochiso.js, ky.js, baocao.js, tonghop.js, nhapexcel.js
     routes/            API: hethong.js, danhmuc.js, nghiepvu.js
     middleware/auth.js xác thực JWT, phân quyền theo vai trò
   test/                test tính điểm và luồng nghiệp vụ
@@ -120,7 +122,7 @@ database/
 | Use Case | Trạng thái | Nơi cài đặt |
 |---|---|---|
 | 1.1 Quản lý tài khoản và phân quyền | Có | `routes/hethong.js`, `pages/QuanTri.jsx` |
-| 1.2 Nhập tài khoản bằng Excel | Đợt 2 | |
+| 1.2 Nhập tài khoản bằng Excel | Có | `services/nhapexcel.js`, `pages/QuanTri.jsx` |
 | 1.3 Xem nhật ký | Có | `routes/hethong.js` |
 | 1.4 Quản lý đơn vị | Có | `routes/danhmuc.js` |
 | 1.5 Quản lý bộ chỉ số | Có | `services/bochiso.js`, `pages/BoChiSo.jsx` |
@@ -132,8 +134,8 @@ database/
 | 3.3 Gửi báo cáo, 3.4 Bổ sung | Có | `services/baocao.js` → `guiBaoCao` |
 | 4.1 – 4.4 Thẩm định | Có | `services/baocao.js`, `pages/ThamDinh.jsx` |
 | 5.1 Theo dõi tiến độ và chậm hạn | Có | `services/ky.js` → `tienDo` |
-| 5.2 So sánh các kỳ | Đợt 2 | |
-| 5.3 Dashboard và xuất báo cáo | Một phần: có bảng xếp hạng theo loại và bảng tổng hợp chung; biểu đồ và xuất tệp để đợt 2 | `pages/KetQua.jsx` |
+| 5.2 So sánh các kỳ | Có | `services/tonghop.js` → `soSanh`, `pages/TongHop.jsx` |
+| 5.3 Dashboard và xuất báo cáo | Có: biểu đồ, xếp hạng theo loại, bảng tổng hợp chung, xuất tệp Excel | `services/tonghop.js` → `dashboard`, `xuatExcel`; `pages/TongHop.jsx` |
 | Thông báo trong ứng dụng (BR15) | Có, gồm nhắc sắp tới hạn và quá hạn | `services/common.js`, `services/ky.js` → `nhacHan` |
 
 ## Điểm khác so với báo cáo
@@ -152,8 +154,7 @@ database/
 - Tài khoản mẫu dùng mật khẩu yếu, chỉ để trình diễn. Đổi `JWT_SECRET` và mật khẩu trước khi dùng thật.
 - Tệp minh chứng lưu ở `server/uploads/`, giới hạn 10 MB mỗi tệp (đổi bằng `MAX_FILE_MB`).
 
-## Đợt 2 (chưa làm)
+## Chưa làm
 
-- UC 1.2 Nhập tài khoản bằng Excel
-- UC 5.2 So sánh các kỳ
-- UC 5.3 Dashboard có biểu đồ, xuất báo cáo ra tệp
+- Xuất báo cáo ra PDF hoặc Word (hiện xuất Excel).
+- Gửi thông báo qua email (báo cáo xếp vào hướng phát triển).

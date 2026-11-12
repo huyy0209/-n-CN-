@@ -11,15 +11,16 @@ import { Ky, KyChiTiet } from './pages/Ky.jsx';
 import { BaoCao, BaoCaoGiao } from './pages/BaoCao.jsx';
 import { ThamDinhCho, ThamDinhChiTiet, ThamDinhLichSu } from './pages/ThamDinh.jsx';
 import { KetQua } from './pages/KetQua.jsx';
+import { Dashboard, SoSanh } from './pages/TongHop.jsx';
 
 
 // Menu của từng vai trò: [đường dẫn, nhãn]
 const MENU = {
   QUAN_TRI: [['/tai-khoan', 'Tài khoản'], ['/nhat-ky', 'Nhật ký']],
-  CHU_TRI: [['/ky', 'Kỳ đánh giá'], ['/bo-chi-so', 'Bộ chỉ số'], ['/don-vi', 'Đơn vị'], ['/loai-minh-chung', 'Loại minh chứng'], ['/ket-qua', 'Kết quả, xếp hạng']],
+  CHU_TRI: [['/ky', 'Kỳ đánh giá'], ['/bo-chi-so', 'Bộ chỉ số'], ['/don-vi', 'Đơn vị'], ['/loai-minh-chung', 'Loại minh chứng'], ['/ket-qua', 'Kết quả, xếp hạng'], ['/dashboard', 'Dashboard'], ['/so-sanh', 'So sánh các kỳ']],
   DAU_MOI: [['/bao-cao', 'Báo cáo của đơn vị'], ['/ket-qua', 'Kết quả, xếp hạng']],
   THAM_DINH: [['/tham-dinh', 'Chờ thẩm định'], ['/tham-dinh-lich-su', 'Lịch sử thẩm định'], ['/ket-qua', 'Kết quả, xếp hạng']],
-  LANH_DAO: [['/ky', 'Tiến độ các kỳ'], ['/ket-qua', 'Kết quả, xếp hạng']],
+  LANH_DAO: [['/dashboard', 'Dashboard'], ['/ky', 'Tiến độ các kỳ'], ['/ket-qua', 'Kết quả, xếp hạng'], ['/so-sanh', 'So sánh các kỳ']],
 };
 
 function DangNhap({ onXong }) {
@@ -103,6 +104,10 @@ export default function App() {
                 <Route path="/don-vi" element={<DonVi />} /><Route path="/loai-minh-chung" element={<LoaiMinhChung />} />
               </>}
               {co('CHU_TRI', 'LANH_DAO') && <><Route path="/ky" element={<Ky />} /><Route path="/ky/:id" element={<KyChiTiet />} /></>}
+              {co('CHU_TRI', 'LANH_DAO') && <>
+                <Route path="/dashboard" element={<Dashboard />} /><Route path="/dashboard/:maKy" element={<Dashboard />} />
+                <Route path="/so-sanh" element={<SoSanh />} /><Route path="/so-sanh/:maKy" element={<SoSanh />} />
+              </>}
               {co('DAU_MOI') && <><Route path="/bao-cao" element={<BaoCao />} /><Route path="/bao-cao/:maGiao" element={<BaoCaoGiao />} /></>}
               {co('THAM_DINH') && <>
                 <Route path="/tham-dinh" element={<ThamDinhCho />} /><Route path="/tham-dinh/:maBC" element={<ThamDinhChiTiet />} />

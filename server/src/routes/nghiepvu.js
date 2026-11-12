@@ -9,6 +9,7 @@ const { Loi } = require('../services/common');
 const { bat, dangNhap, vaiTro } = require('../middleware/auth');
 const kySv = require('../services/ky');
 const bcSv = require('../services/baocao');
+const tongHop = require('../services/tonghop');
 const { ymd } = require('../lib/dates');
 const C = require('../lib/consts');
 
@@ -83,6 +84,16 @@ r.get('/ketqua/giao/:id', bat(async (req, res) => {
   const n = req.nguoi;
   if (n.MaVaiTro === 'QUAN_TRI' || (n.MaVaiTro === 'DAU_MOI' && n.MaDV !== ct.MaDV)) throw new Loi(403, 'Bạn chỉ xem được điểm chi tiết của đơn vị mình. (BR19)');
   res.json(ct);
+}));
+
+// ===== So sánh các kỳ (UC 5.2), dashboard và xuất báo cáo (UC 5.3) - Lãnh đạo, Cán bộ chủ trì =====
+r.get('/sosanh/ky/:id', xemTongHop, bat(async (req, res) => res.json(await tongHop.soSanh(db, Number(req.params.id)))));
+r.get('/dashboard/ky/:id', xemTongHop, bat(async (req, res) => res.json(await tongHop.dashboard(db, Number(req.params.id)))));
+r.get('/ketqua/ky/:id/xuat', xemTongHop, bat(async (req, res) => {
+  const { buffer, tenTep } = await tongHop.xuatExcel(db, Number(req.params.id));
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${tenTep}"`);
+  res.send(buffer);
 }));
 
 // ===== Báo cáo số liệu của cán bộ đầu mối =====

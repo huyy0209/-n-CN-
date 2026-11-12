@@ -6,10 +6,7 @@ Thời lượng: khoảng 12–15 phút nếu làm đủ. Bản rút gọn 5 ph�
 
 ## 0. Chuẩn bị trước khi demo
 
-1. Nạp lại dữ liệu mẫu để số liệu khớp kịch bản. Đóng hai cửa sổ API và Giao diện (nếu đang mở), rồi trong thư mục `server` chạy:
-   ```bash
-   npm run db:reset
-   ```
+1. Nạp lại dữ liệu mẫu để số liệu khớp kịch bản: mở `stop.bat`, rồi mở `reset-data.bat` và gõ `C` để xác nhận. (Hoặc chạy `npm run db:reset` trong thư mục `server`.)
 2. Chạy `start.bat`. Trình duyệt mở http://127.0.0.1:5173.
 3. Mở thêm một cửa sổ **ẩn danh** cùng địa chỉ. Hai cửa sổ đăng nhập hai vai trò khác nhau, đổi vai không cần đăng xuất. (Hai tab thường trong cùng một cửa sổ dùng chung phiên đăng nhập, nên phải dùng cửa sổ ẩn danh.)
 4. Chuẩn bị sẵn hai tệp PDF bất kỳ dưới 10 MB để làm minh chứng. Có thể dùng `server/uploads/minh-chung-mau.pdf`.
@@ -24,7 +21,7 @@ Mật khẩu mọi tài khoản mẫu: `123456`.
 | Lãnh đạo | `lanhdao` |
 | Quản trị hệ thống | `admin` |
 
-Dữ liệu sau khi nạp lại: Kỳ năm 2025 đã chốt; Kỳ quý 3 năm 2026 đang mở và đã quá hạn; Kỳ quý 4 năm 2026 đang mở, còn hạn.
+Dữ liệu sau khi nạp lại: Kỳ năm 2024, Kỳ năm 2025 và Kỳ quý 2 năm 2026 đã chốt; Kỳ quý 3 năm 2026 đang mở và đã quá hạn; Kỳ quý 4 năm 2026 đang mở, còn hạn.
 
 ## 1. Bộ chỉ số theo phiên bản — `chutri`
 
@@ -145,6 +142,23 @@ Cách tự kiểm 99,17: N4 = 10/10, N5 = 10/10, N6 = (78 ÷ 80 × 20 + 10) ÷ 3
 | 9.3 | Bấm tab **Bảng tổng hợp chung** | Một bảng gộp cả sở và xã, có cột hạng chung | BR12 |
 | 9.4 | Cửa sổ ẩn danh (`dm_xb`): **Kết quả, xếp hạng** → Kỳ năm 2025 | Thấy tổng điểm và hạng của mọi đơn vị, nhưng nút Điểm chi tiết chỉ có ở dòng UBND Xã B | BR19: điểm tổng và hạng công khai, chi tiết thì không |
 
+## 9b. Dashboard, so sánh các kỳ, xuất báo cáo — `lanhdao`
+
+**Ý nêu bật:** lãnh đạo có số liệu để theo dõi và so sánh giữa các kỳ, không phải chờ bảng tổng hợp làm tay (mục 1.1, UC 5.2, UC 5.3).
+
+| Bước | Thao tác | Kết quả | Chứng minh |
+|---|---|---|---|
+| 9b.1 | Đăng nhập `lanhdao` → **Dashboard** → chọn **Kỳ năm 2025** | Ô số: 6 đơn vị, điểm trung bình 76,21, cao nhất 98,05 (Sở KH&CN), thấp nhất 42,3 (Đặc khu C). Ba biểu đồ: tổng điểm theo đơn vị, số đơn vị theo mức độ, điểm nhóm trung bình | UC 5.3 |
+| 9b.2 | Đổi bộ lọc sang "UBND xã, phường, đặc khu" | Biểu đồ còn 3 đơn vị, hạng đổi sang hạng theo loại | BR12 |
+| 9b.3 | Bấm **Xuất báo cáo Excel** | Tải về `ket-qua-ky-1.xlsx` gồm 4 sheet: Tổng hợp chung, Xếp hạng theo loại, Điểm nhóm, Điểm chỉ số | UC 5.3: xuất tệp |
+| 9b.4 | Menu **So sánh các kỳ** → Kỳ năm 2025 | So với Kỳ năm 2024. UBND Xã B: 63,07 → 81,76, ▲ +18,69, mức độ Trung bình → Tốt | UC 5.2 bước 3–4 |
+| 9b.5 | Dòng UBND Xã B → **Theo nhóm** | Điểm nhóm: Thể chế số 36 → 82. Điểm từng chỉ số: CS03 0 → 10 (hai kỳ cùng bộ chỉ số nên so được đến chỉ số) | UC 5.2 bước 5–6 |
+| 9b.6 | Chỉ dòng UBND Đặc khu C | Ghi chú "Chỉ có mặt ở kỳ này, không so sánh được" | UC 5.2 luồng 4a |
+| 9b.7 | Chọn **Kỳ năm 2024** | Thông báo không có kỳ liền trước cùng loại, bảng không có cột chênh lệch | UC 5.2 luồng 3a |
+| 9b.8 | Chọn **Kỳ quý 3 năm 2026** (sau khi đã chốt ở mục 8) | So với Kỳ quý 2 năm 2026, không so với kỳ năm | Kỳ quý so với kỳ quý |
+
+Cán bộ đầu mối và chuyên viên thẩm định không có hai menu này.
+
 ## 10. Quản trị hệ thống — `admin`
 
 **Ý nêu bật:** tách danh mục kỹ thuật cho quản trị hệ thống; nhật ký không sửa, không xóa (BR20, BR24).
@@ -154,6 +168,7 @@ Cách tự kiểm 99,17: N4 = 10/10, N5 = 10/10, N6 = (78 ÷ 80 × 20 + 10) ÷ 3
 | 10.1 | Đăng nhập `admin` | Menu chỉ có Tài khoản và Nhật ký, không có số liệu nghiệp vụ | Quyền theo vai trò (mục 2.3.1) |
 | 10.2 | **Tạo tài khoản**: điền họ tên, tên đăng nhập, mật khẩu; vai trò Cán bộ đầu mối, để trống đơn vị → Lưu | Bị chặn: đầu mối phải thuộc một đơn vị | RB15 |
 | 10.3 | Chọn đơn vị, điền đủ → Lưu. Sau đó **Sửa** tài khoản vừa tạo → Trạng thái Khóa | Tài khoản chuyển Đã khóa; không có nút xóa | BR24, UC 1.1 |
+| 10.3b | **Tải tệp mẫu** → mở tệp, sheet `TaiKhoan` điền 3 dòng: một dòng đúng; một dòng tên đăng nhập `admin`; một dòng mã vai trò `ABC` → lưu → **Nhập từ Excel** | Hộp kết quả: đã tạo 1 tài khoản, bỏ qua 2 dòng kèm lý do "trùng tên đăng nhập", "sai mã vai trò" | UC 1.2 |
 | 10.4 | Menu **Nhật ký** | Thấy các dòng vừa phát sinh: `MO_KY`, `GUI_BAO_CAO`, `KET_LUAN_THAM_DINH`, `GUI_LAI_BAO_CAO`, `GIA_HAN`, `CHOT_KY`. Không có nút sửa hay xóa | BR20, UC 1.3 |
 
 ## 11. Danh mục đã dùng thì không xóa — `chutri`
@@ -186,4 +201,4 @@ Nếu thời gian ngắn, làm theo thứ tự này:
 
 ## Chưa có trong bản này
 
-Nhập tài khoản bằng Excel (UC 1.2), so sánh các kỳ (UC 5.2), biểu đồ dashboard và xuất tệp (UC 5.3). Nếu được hỏi, nói rõ đây là phần của đợt 2.
+Xuất báo cáo ra PDF hoặc Word (hiện xuất Excel) và gửi thông báo qua email. Nếu được hỏi, nói rõ email nằm ở hướng phát triển của báo cáo.

@@ -28,9 +28,9 @@ export async function api(duongDan, { method = 'GET', body, form } = {}) {
   return res.json();
 }
 
-// Tải tệp minh chứng (cần token nên không dùng thẻ <a> trực tiếp)
-export async function taiTep(maMC, tenTep) {
-  const res = await fetch(`/api/minhchung/${maMC}/tai`, { headers: { Authorization: `Bearer ${layToken()}` } });
+// Tải một tệp từ API về máy (cần token nên không dùng thẻ <a> trực tiếp)
+export async function taiVe(duongDan, tenTep) {
+  const res = await fetch(`/api${duongDan}`, { headers: { Authorization: `Bearer ${layToken()}` } });
   if (!res.ok) throw await docLoi(res);
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement('a');
@@ -39,3 +39,6 @@ export async function taiTep(maMC, tenTep) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// Tải tệp minh chứng
+export const taiTep = (maMC, tenTep) => taiVe(`/minhchung/${maMC}/tai`, tenTep);

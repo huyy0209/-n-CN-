@@ -143,3 +143,28 @@ tr.cua-toi td { background: #e9f3f1; }
   .luoi-2 { grid-template-columns: 1fr; }
   main { padding: 1rem; overflow-x: auto; }
 }
+
+/* Dashboard và biểu đồ cột ngang (màu đã kiểm tra phân biệt cho người mù màu) */
+.luoi-o { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+.o-so { margin: 0; display: flex; flex-direction: column; gap: .15rem; }
+.o-so small { color: var(--mo); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.o-so strong { font-size: 1.7rem; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.o-so span { color: var(--mo); font-size: .88rem; }
+.bieu-do { display: flex; flex-direction: column; gap: .55rem; }
+.chu-giai { display: flex; gap: 1.2rem; flex-wrap: wrap; font-size: .88rem; color: var(--mo); margin-bottom: .2rem; }
+.chu-giai span { display: inline-flex; align-items: center; gap: .4rem; }
+.o-mau { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.o-mau.nay, .bd-thanh.nay { background: #0099a8; }
+.o-mau.truoc, .bd-thanh.truoc { background: #c9772b; }
+.bd-dong { display: grid; grid-template-columns: minmax(120px, 230px) 1fr; gap: .8rem; align-items: center; }
+.bd-nhan { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92rem; }
+.bd-nhan small { display: block; color: var(--mo); font-size: .78rem; overflow: hidden; text-overflow: ellipsis; }
+.bd-cot { display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--vien); }
+.bd-ray { display: flex; align-items: center; gap: .5rem; min-height: 14px; }
+.bd-ray:hover .bd-thanh { filter: brightness(.88); }
+.bd-thanh { height: 12px; border-radius: 0 4px 4px 0; flex: none; max-width: calc(100% - 4rem); }
+.bd-so { font-size: .85rem; font-variant-numeric: tabular-nums; color: var(--muc); }
+.tang { color: var(--xanh); font-weight: 600; white-space: nowrap; }
+.giam { color: var(--do); font-weight: 600; white-space: nowrap; }
+tr.dong-chi-tiet > td { background: #f7f8f5; }
+tr.dong-chi-tiet h4 { margin-top: .2rem; }

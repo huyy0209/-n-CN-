@@ -84,7 +84,7 @@ async function seed(db) {
   for (const [ten, tu, den] of [['Yếu', 0, 50], ['Trung bình', 50, 65], ['Khá', 65, 80], ['Tốt', 80, 90], ['Xuất sắc', 90, 100]]) {
     await db('MUCDOCHUYENDOISO').insert({ TenMucDo: ten, DiemTu: tu, DiemDen: den, MaBo: maBo });
   }
-  await bochiso.banHanh(db, maBo, nd.chutri, vn('2025-11-15T09:00:00'));
+  await bochiso.banHanh(db, maBo, nd.chutri, vn('2024-11-15T09:00:00'));
 
   // --- Tệp minh chứng mẫu ---
   fs.mkdirSync(THU_MUC_TEP, { recursive: true });
@@ -157,7 +157,49 @@ async function seed(db) {
   const gQ4 = await maGiaoCua(kyQ4);
   await nop(gQ4[dv.xb], nd.dm_xb, 'CS08', 70, vn('2026-11-05T09:00:00'), { gui: false }); // một báo cáo nháp sẵn
 
-  return { dv, nd, CS, maBo, kyNam, kyQ3, kyQ4 };
+  // --- Hai kỳ đã chốt trước đó, để có dữ liệu cho So sánh các kỳ (UC 5.2) ---
+  // Tạo sau cùng để mã của ba kỳ ở trên không đổi.
+  async function kyDaChot(thongTin, soLieu, lucMo, lucGui, lucThamDinh, lucChot) {
+    const maKy = await kySv.taoKy(db, { ...thongTin, MaBo: maBo });
+    await kySv.giaoDonVi(db, maKy, Object.keys(soLieu).map(Number), nd.chutri);
+    await kySv.moKy(db, maKy, nd.chutri, vn(lucMo));
+    const g = await maGiaoCua(maKy);
+    for (const maDV of Object.keys(soLieu).map(Number)) {
+      for (const [kyHieu, giaTri] of Object.entries(soLieu[maDV])) {
+        const maBC = await nop(g[maDV], dauMoi[maDV], kyHieu, giaTri, vn(lucGui));
+        await bcSv.ketLuan(db, maBC, 'DAT', null, nguoiTD(maDV), vn(lucThamDinh));
+      }
+    }
+    await kySv.chotKy(db, maKy, nd.chutri, vn(lucChot));
+    return maKy;
+  }
+  // Kỳ năm 2024: Đặc khu C chưa được giao (đơn vị chỉ có mặt ở một kỳ)
+  const kyNam2024 = await kyDaChot(
+    { TenKy: 'Kỳ năm 2024', LoaiKy: 'NAM', NgayBatDau: '2024-01-01', NgayKetThuc: '2024-12-31', HanNop: '2025-01-15', NgayChot: '2025-02-28' },
+    {
+      [dv.skhcn]: { CS01: 1, CS02: 5, CS03: 1, CS04: 90, CS05: 98, CS06: 1, CS07: 1, CS09: 80, CS15: 0 },
+      [dv.syt]: { CS01: 1, CS02: 2, CS03: 1, CS04: 85, CS05: 80, CS06: 0, CS07: 0, CS09: 50, CS15: 0 },
+      [dv.snv]: { CS01: 0, CS02: 2, CS03: 1, CS04: 80, CS05: 90, CS06: 1, CS07: 1, CS09: 70, CS15: 0 },
+      [dv.pa]: { CS01: 1, CS02: 4, CS03: 1, CS04: 85, CS05: 95, CS06: 1, CS07: 0, CS13: 72, CS14: 40 },
+      [dv.xb]: { CS01: 1, CS02: 2, CS03: 0, CS04: 60, CS05: 85, CS06: 0, CS07: 1, CS13: 55, CS14: 20 },
+    },
+    '2024-12-01T08:00:00', '2025-01-10T10:00:00', '2025-01-25T14:00:00', '2025-02-28T16:00:00'
+  );
+  // Kỳ quý 2 năm 2026: kỳ quý liền trước của Kỳ quý 3 năm 2026
+  const kyQ2 = await kyDaChot(
+    { TenKy: 'Kỳ quý 2 năm 2026', LoaiKy: 'QUY', NgayBatDau: '2026-04-01', NgayKetThuc: '2026-06-30', HanNop: '2026-07-10', NgayChot: '2026-07-31' },
+    {
+      [dv.skhcn]: { CS08: 78, CS10: 1, CS11: 70, CS12: 96 },
+      [dv.syt]: { CS08: 55, CS10: 0, CS11: 48, CS12: 85 },
+      [dv.snv]: { CS08: 66, CS10: 2, CS11: 60, CS12: 90 },
+      [dv.pa]: { CS08: 72, CS10: 0, CS11: 76, CS12: 92 },
+      [dv.xb]: { CS08: 58, CS10: 1, CS11: 50, CS12: 80 },
+      [dv.dkc]: { CS08: 30, CS10: 3, CS11: 35, CS12: 60 },
+    },
+    '2026-06-25T08:00:00', '2026-07-08T10:00:00', '2026-07-20T14:00:00', '2026-07-31T16:00:00'
+  );
+
+  return { dv, nd, CS, maBo, kyNam, kyQ3, kyQ4, kyNam2024, kyQ2 };
 }
 
 module.exports = { seed, MAT_KHAU_MAU };

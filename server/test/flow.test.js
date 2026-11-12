@@ -14,6 +14,9 @@ const { seed } = require('../src/seed');
 const kySv = require('../src/services/ky');
 const bcSv = require('../src/services/baocao');
 const bochiso = require('../src/services/bochiso');
+const tongHop = require('../src/services/tonghop');
+const nhapExcel = require('../src/services/nhapexcel');
+const ExcelJS = require('exceljs');
 
 let s;
 const vn = (x) => new Date(`${x}+07:00`);
@@ -135,7 +138,7 @@ test('chốt kỳ quý 3: chưa Đạt tính 0 điểm, chia lại trọng số 
   assert.equal(KetQua.find((k) => k.MaDV === s.dv.skhcn).TongDiem, 99.17);
   // Đặc khu C: chỉ CS08 Đạt: 40/80*10=5/10 -> N4 0,5; còn lại 0 => 7,5/60*100 = 12,5
   assert.equal(KetQua.find((k) => k.MaDV === s.dv.dkc).TongDiem, 12.5);
-  assert.equal(await db('KETQUADANHGIA').count({ n: '*' }).first().then((r) => Number(r.n)), 12);
+  assert.equal(await db('KETQUADANHGIA').count({ n: '*' }).first().then((r) => Number(r.n)), 23); // 6 + 5 + 6 của ba kỳ seed đã chốt, cộng 6 của kỳ quý 3
   assert.ok(await db('NHATKY').where({ HanhDong: 'CHOT_KY' }).where('DoiTuong', 'like', `Kỳ #${s.kyQ3}%`).first());
   assert.ok(await db('THONGBAO').where({ LoaiTB: 'CHOT_KET_QUA', MaND: s.nd.lanhdao.MaND }).first());
 });
@@ -152,4 +155,69 @@ test('nhắc hạn tự động không gửi trùng (BR15)', async () => {
   const lan1 = await kySv.nhacHan(db, luc);
   assert.ok(lan1 > 0);
   assert.equal(await kySv.nhacHan(db, luc), 0);
+});
+
+test('so sánh kỳ năm 2025 với kỳ năm 2024: chênh điểm, hạng, điểm nhóm, từng chỉ số; đơn vị vắng kỳ trước (UC 5.2)', async () => {
+  const ss = await tongHop.soSanh(db, s.kyNam);
+  assert.equal(ss.KyTruoc.TenKy, 'Kỳ năm 2024');
+  assert.equal(ss.CungBo, true);
+  const xb = ss.DonVi.find((d) => d.MaDV === s.dv.xb);
+  assert.equal(xb.Diem, 81.76);
+  // Xã B 2024 tính tay: N1 15/20*10=7,5; N2 9/25*15=5,4; N3 8,5/15*15=8,5; N4 5/5*15=15; N6 (55/85*10+5)/20*30=17,206
+  // tổng 53,606 / 85 * 100 = 63,07
+  assert.equal(xb.DiemTruoc, 63.07);
+  assert.equal(xb.ChenhDiem, 18.69);
+  assert.equal(xb.ChiSo.find((c) => c.KyHieu === 'CS03').Chenh, 10);
+  assert.equal(xb.Nhom.find((n) => n.TenNhom === 'Thể chế số').Chenh, 46); // 82 - 36
+  const dkc = ss.DonVi.find((d) => d.MaDV === s.dv.dkc);
+  assert.deepEqual([dkc.CoKyNay, dkc.CoKyTruoc, dkc.ChenhDiem, dkc.ChiSo], [true, false, null, undefined]);
+  // kỳ đầu tiên của loại: không có kỳ trước
+  const dau = await tongHop.soSanh(db, s.kyNam2024);
+  assert.equal(dau.KyTruoc, null);
+  assert.ok(dau.DonVi.every((d) => d.ChenhDiem === null));
+  // kỳ chưa chốt thì không so sánh được
+  await tuChoi(() => tongHop.soSanh(db, s.kyQ4), /chưa chốt/);
+});
+
+test('kỳ quý 3 (đã chốt ở test trên) so với kỳ quý 2, không so với kỳ năm (UC 5.2 bước 3)', async () => {
+  const ss = await tongHop.soSanh(db, s.kyQ3);
+  assert.equal(ss.KyTruoc.TenKy, 'Kỳ quý 2 năm 2026');
+  assert.equal(ss.DonVi.length, 6);
+});
+
+test('dashboard và xuất Excel của kỳ năm 2025 (UC 5.3)', async () => {
+  const d = await tongHop.dashboard(db, s.kyNam);
+  assert.equal(d.SoDonVi, 6);
+  assert.equal(d.TheoMucDo.reduce((n, m) => n + m.SoDonVi, 0), 6);
+  assert.equal(d.TheoLoai.length, 2);
+  assert.equal(d.TheoNhom.find((n) => n.TenNhom === 'An toàn thông tin mạng').SoDonVi, 3); // chỉ sở có nhóm này ở kỳ năm
+  const { buffer } = await tongHop.xuatExcel(db, s.kyNam);
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buffer);
+  assert.deepEqual(wb.worksheets.map((w) => w.name), ['Tổng hợp chung', 'Xếp hạng theo loại', 'Điểm nhóm', 'Điểm chỉ số']);
+  const dong = [];
+  wb.getWorksheet('Tổng hợp chung').eachRow((r) => dong.push(r.values));
+  assert.ok(dong.some((r) => r[2] === 'UBND Xã B' && r[4] === 81.76));
+});
+
+test('nhập tài khoản bằng Excel: tạo dòng hợp lệ, bỏ qua và liệt kê dòng lỗi (UC 1.2)', async () => {
+  const mau = new ExcelJS.Workbook();
+  await mau.xlsx.load(await nhapExcel.taoTepMau(db));
+  assert.ok(mau.getWorksheet('TaiKhoan') && mau.getWorksheet('DanhMuc'));
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('TaiKhoan');
+  ws.addRow(['Họ tên', 'Tên đăng nhập', 'Mật khẩu', 'Mã vai trò', 'Mã đơn vị']);
+  ws.addRow(['Người Mới Một', 'moi_1', 'matkhau1', 'dau_moi', s.dv.pa]); // mã vai trò chữ thường vẫn nhận
+  ws.addRow(['Người Trùng', 'chutri', 'matkhau1', 'CHU_TRI', '']); // trùng tên có sẵn
+  ws.addRow(['Người Sai', 'sai_1', '123', 'KHONG_CO', 9999]); // 3 lỗi
+  ws.addRow(['Thiếu Đơn Vị', 'td_moi', 'matkhau1', 'THAM_DINH', '']);
+  ws.addRow(['Người Lặp', 'moi_1', 'matkhau1', 'LANH_DAO', '']); // trùng ngay trong tệp
+  ws.addRow(['Lãnh Đạo Mới', 'ld_moi', 'matkhau1', 'LANH_DAO', '']);
+  const kq = await nhapExcel.nhapTuExcel(db, Buffer.from(await wb.xlsx.writeBuffer()), s.nd.admin);
+  assert.deepEqual(kq.TaiKhoan, ['moi_1', 'ld_moi']);
+  assert.deepEqual(kq.BoQua.map((b) => b.Dong), [3, 4, 5, 6]);
+  assert.match(kq.BoQua[1].LyDo, /mật khẩu.*sai mã vai trò.*sai mã đơn vị/);
+  const moi = await db('NGUOIDUNG').where({ TenDangNhap: 'moi_1' }).first();
+  assert.deepEqual([moi.MaVaiTro, moi.MaDV, moi.MatKhau.startsWith('$2')], ['DAU_MOI', s.dv.pa, true]); // mật khẩu được băm
+  await tuChoi(() => nhapExcel.nhapTuExcel(db, Buffer.from('khong phai excel'), s.nd.admin), /Không đọc được tệp/);
 });

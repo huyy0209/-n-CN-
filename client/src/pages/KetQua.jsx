@@ -1,9 +1,9 @@
 // Kết quả và xếp hạng của kỳ đã chốt: xếp hạng theo loại đơn vị và bảng tổng hợp chung (BR12).
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, taiVe } from '../api.js';
 import { useNguoi } from '../nguoi.js';
-import { BaoLoi, HopThoai, Nhan, TrangThaiTai, fmtGiaTri, fmtNgay, fmtSo, useTai } from '../ui.jsx';
+import { BaoLoi, HopThoai, Nhan, TrangThaiTai, fmtGiaTri, fmtNgay, fmtSo, useTai, useThaoTac } from '../ui.jsx';
 
 function ChiTietDiem({ maGiao, onDong }) {
   const t = useTai(() => api(`/ketqua/giao/${maGiao}`), [maGiao]);
@@ -34,6 +34,8 @@ export function KetQua() {
   const chon = maKy || dsKy.duLieu?.[0]?.MaKy;
   const t = useTai(() => (chon ? api(`/ketqua/ky/${chon}`) : Promise.resolve(null)), [chon]);
   const [xem, setXem] = useState(null);
+  const xuat = useThaoTac();
+  const duocXuat = ['CHU_TRI', 'LANH_DAO'].includes(nguoi.MaVaiTro);
   const [che, setChe] = useState('LOAI'); // LOAI = xếp hạng theo loại đơn vị, CHUNG = bảng tổng hợp chung
   // Đầu mối chỉ xem điểm chi tiết của đơn vị mình (BR19)
   const xemDuoc = (k) => nguoi.MaVaiTro !== 'DAU_MOI' || nguoi.MaDV === k.MaDV;
@@ -53,9 +55,10 @@ export function KetQua() {
   return (
     <>
       <div className="dau-trang"><h2>Kết quả và xếp hạng</h2>
-        {dsKy.duLieu && dsKy.duLieu.length > 0 && <select value={chon || ''} onChange={(e) => dieuHuong(`/ket-qua/${e.target.value}`)} aria-label="Chọn kỳ">{dsKy.duLieu.map((k) => <option key={k.MaKy} value={k.MaKy}>{k.TenKy}</option>)}</select>}
+        <div className="hang-nut">{dsKy.duLieu && dsKy.duLieu.length > 0 && <select value={chon || ''} onChange={(e) => dieuHuong(`/ket-qua/${e.target.value}`)} aria-label="Chọn kỳ">{dsKy.duLieu.map((k) => <option key={k.MaKy} value={k.MaKy}>{k.TenKy}</option>)}</select>}
+        {duocXuat && chon && <button className="nut" disabled={xuat.dangChay} onClick={() => xuat.chay(() => taiVe(`/ketqua/ky/${chon}/xuat`, `ket-qua-ky-${chon}.xlsx`))}>Xuất Excel</button>}</div>
       </div>
-      <BaoLoi loi={dsKy.loi} />
+      <BaoLoi loi={dsKy.loi || xuat.loi} />
       {dsKy.duLieu && dsKy.duLieu.length === 0 && <p className="mo">Chưa có kỳ nào được chốt. Điểm và thứ hạng được công bố sau khi chốt kỳ.</p>}
       {chon && <TrangThaiTai t={t}>{(d) => d && (
         <>

@@ -31,7 +31,11 @@ if errorlevel 1 (
   exit /b 1
 )
 
-if not exist "%PROJECT_DIR%server\node_modules\express\package.json" (
+rem exceljs la thu vien them o dot 2: thieu thi cai lai
+set "CAN_CAI_SERVER="
+if not exist "%PROJECT_DIR%server\node_modules\express\package.json" set "CAN_CAI_SERVER=1"
+if not exist "%PROJECT_DIR%server\node_modules\exceljs\package.json" set "CAN_CAI_SERVER=1"
+if defined CAN_CAI_SERVER (
   echo Dang cai thu vien may chu...
   pushd "%PROJECT_DIR%server"
   call npm install

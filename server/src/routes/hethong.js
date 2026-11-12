@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const { db, them } = require('../db');
 const { Loi, ghiNhatKy } = require('../services/common');
 const { taoToken, bat, dangNhap, vaiTro } = require('../middleware/auth');
+const multer = require('multer');
+const nhapExcel = require('../services/nhapexcel');
 
 const r = express.Router();
 
@@ -91,6 +93,25 @@ r.put('/nguoidung/:id', quanTri, bat(async (req, res) => {
   const thayDoi = [cu.MaVaiTro !== capNhat.MaVaiTro && `vai trò ${cu.MaVaiTro} -> ${capNhat.MaVaiTro}`, cu.TrangThaiTK !== tt && (tt === 'KHOA' ? 'khóa' : 'mở khóa'), d.MatKhau && 'đặt lại mật khẩu'].filter(Boolean);
   if (thayDoi.length) await ghiNhatKy(db, req.nguoi.MaND, 'SUA_TAI_KHOAN', `Tài khoản ${cu.TenDangNhap}: ${thayDoi.join(', ')}`);
   res.json({ ok: true });
+}));
+
+// --- UC 1.2 Nhập tài khoản bằng Excel ---
+const LOAI_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+r.get('/nguoidung-excel/mau', quanTri, bat(async (req, res) => {
+  res.setHeader('Content-Type', LOAI_XLSX);
+  res.setHeader('Content-Disposition', 'attachment; filename="mau-nhap-tai-khoan.xlsx"');
+  res.send(await nhapExcel.taoTepMau(db));
+}));
+
+// Tệp đọc thẳng từ bộ nhớ, không lưu xuống đĩa; giới hạn 2 MB
+const taiExcel = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } }).single('tep');
+r.post('/nguoidung-excel', quanTri, (req, res, next) => {
+  taiExcel(req, res, (e) => next(e instanceof multer.MulterError ? new Loi(422, 'Tệp vượt quá 2 MB hoặc tải lên thất bại.') : e));
+}, bat(async (req, res) => {
+  if (!req.file) throw new Loi(422, 'Chưa chọn tệp.');
+  if (!/\.xlsx$/i.test(req.file.originalname)) throw new Loi(422, 'Chỉ nhận tệp .xlsx theo mẫu.');
+  res.json(await nhapExcel.nhapTuExcel(db, req.file.buffer, req.nguoi));
 }));
 
 // --- UC 1.3 Xem nhật ký (chỉ đọc - BR20) ---
