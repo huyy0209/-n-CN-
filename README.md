@@ -21,6 +21,8 @@ Bản này là **đợt 1 — luồng chính**. Các chức năng để đợt 2
 
 Cần Node.js 20 trở lên và SQL Server (bản Express hoặc Developer).
 
+**Chạy nhanh trên Windows:** mở `start.bat` ở thư mục dự án. Lần đầu chạy, tệp sẽ cài các thư viện còn thiếu, tạo `.env` dùng SQLite và nạp dữ liệu mẫu nếu chưa có CSDL, sau đó mở API, giao diện và trình duyệt. Cần Node.js 22.x; nếu máy chưa có Node 22, hãy cài Node.js 22 rồi chạy lại. Đóng hai cửa sổ API và Giao diện để dừng ứng dụng.
+
 **1. Chuẩn bị SQL Server**
 
 - Tạo CSDL trống: `CREATE DATABASE IS028;`
@@ -63,16 +65,21 @@ Muốn chạy một cổng duy nhất: `npm run build` trong `client`, sau đó 
 
 ## Tài khoản mẫu
 
-Mật khẩu chung: `123456`
+Đăng nhập tại http://127.0.0.1:5173. Mật khẩu chung cho tất cả tài khoản mẫu là **`123456`**.
 
 | Tên đăng nhập | Vai trò | Đơn vị |
 |---|---|---|
 | `admin` | Quản trị hệ thống | Sở Khoa học và Công nghệ |
 | `chutri` | Cán bộ cơ quan chủ trì | Sở Khoa học và Công nghệ |
 | `lanhdao` | Lãnh đạo | Sở Khoa học và Công nghệ |
-| `dm_skhcn`, `dm_syt`, `dm_snv` | Cán bộ đầu mối | Sở KH&CN, Sở Y tế, Sở Nội vụ |
-| `dm_pa`, `dm_xb`, `dm_dkc` | Cán bộ đầu mối | UBND Phường A, Xã B, Đặc khu C |
-| `td_skhcn`, `td_syt` | Chuyên viên thẩm định | Sở KH&CN, Sở Y tế |
+| `dm_skhcn` | Cán bộ đầu mối | Sở Khoa học và Công nghệ |
+| `dm_syt` | Cán bộ đầu mối | Sở Y tế |
+| `dm_snv` | Cán bộ đầu mối | Sở Nội vụ |
+| `dm_pa` | Cán bộ đầu mối | UBND Phường A |
+| `dm_xb` | Cán bộ đầu mối | Xã B |
+| `dm_dkc` | Cán bộ đầu mối | Đặc khu C |
+| `td_skhcn` | Chuyên viên thẩm định | Sở Khoa học và Công nghệ |
+| `td_syt` | Chuyên viên thẩm định | Sở Y tế |
 
 ## Dữ liệu mẫu
 
@@ -82,6 +89,10 @@ Mật khẩu chung: `123456`
 - **Kỳ quý 4 năm 2026** — đang mở, còn hạn: dùng thử nhập số liệu, đính kèm, gửi, gia hạn.
 
 Gợi ý trình diễn: `dm_xb` nhập và gửi một chỉ số ở kỳ quý 4 → `td_skhcn` kết luận Chưa đạt kèm nhận xét → `dm_xb` xem thông báo, bổ sung, gửi lại → `td_skhcn` kết luận Đạt → `chutri` chốt kỳ quý 3 và xem xếp hạng.
+
+## Hướng dẫn thao tác và demo
+
+Kịch bản demo từng chức năng, kèm ý trong báo cáo mà mỗi bước chứng minh: xem [HUONG_DAN_DEMO.md](HUONG_DAN_DEMO.md).
 
 ## Cấu trúc thư mục
 
