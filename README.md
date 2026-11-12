@@ -94,6 +94,8 @@ Gợi ý trình diễn: `dm_xb` nhập và gửi một chỉ số ở kỳ quý 
 
 Kịch bản demo từng chức năng, kèm ý trong báo cáo mà mỗi bước chứng minh: xem [HUONG_DAN_DEMO.md](HUONG_DAN_DEMO.md).
 
+Mẫu một quy trình trọn vẹn tự tạo từ đầu (bộ chỉ số, kỳ, số liệu, tệp minh chứng, bảng điểm tính tay để đối chiếu): xem [mau/MAU_QUY_TRINH.md](mau/MAU_QUY_TRINH.md).
+
 ## Cấu trúc thư mục
 
 ```
