@@ -21,7 +21,7 @@ Bản này là **đợt 1 — luồng chính**. Các chức năng để đợt 2
 
 Cần Node.js 20 trở lên và SQL Server (bản Express hoặc Developer).
 
-**Chạy nhanh trên Windows:** mở `start.bat` ở thư mục dự án. Lần đầu chạy, tệp sẽ cài các thư viện còn thiếu, tạo `.env` dùng SQLite và nạp dữ liệu mẫu nếu chưa có CSDL, sau đó mở API, giao diện và trình duyệt. Cần Node.js 22.x; nếu máy chưa có Node 22, hãy cài Node.js 22 rồi chạy lại. Đóng hai cửa sổ API và Giao diện để dừng ứng dụng.
+**Chạy nhanh trên Windows:** mở `start.bat` ở thư mục dự án. Lần đầu chạy, tệp sẽ cài các thư viện còn thiếu, tạo `.env` dùng SQLite và nạp dữ liệu mẫu nếu chưa có CSDL, sau đó mở API, giao diện và trình duyệt. Cần Node.js 22.x; nếu máy chưa có Node 22, hãy cài Node.js 22 rồi chạy lại. Để dừng ứng dụng, mở `stop.bat` (đóng cả API lẫn giao diện), hoặc tự đóng hai cửa sổ API và Giao diện.
 
 **1. Chuẩn bị SQL Server**
 
