@@ -89,6 +89,17 @@ if not exist "%PROJECT_DIR%server\is028.sqlite" (
     exit /b 1
   )
   popd
+) else (
+  rem CSDL da co: nang cap ten bang cu GIAODONVI va THAMDINH neu can, giu nguyen du lieu
+  pushd "%PROJECT_DIR%server"
+  call npm run db:migrate
+  if errorlevel 1 (
+    popd
+    echo Kiem tra/nang cap co so du lieu that bai.
+    pause
+    exit /b 1
+  )
+  popd
 )
 
 echo Dang khoi dong API va giao dien...

@@ -13,7 +13,7 @@ export function BaoCao() {
         <table className="bang">
           <thead><tr><th>Kỳ</th><th>Hạn nộp của đơn vị</th><th>Trạng thái kỳ</th><th className="so">Chỉ số</th><th className="so">Đạt</th><th className="so">Chờ thẩm định</th><th className="so">Cần bổ sung</th><th className="so">Chưa gửi</th></tr></thead>
           <tbody>{ds.map((x) => (
-            <tr key={x.MaGiao}><td><Link to={`/bao-cao/${x.MaGiao}`}>{x.TenKy}</Link></td>
+            <tr key={x.MaHS}><td><Link to={`/bao-cao/${x.MaHS}`}>{x.TenKy}</Link></td>
               <td>{fmtNgay(x.TienDo.HanHienHanh)}{x.TienDo.DaQuaHan && x.TrangThaiKy === 'DANG_MO' && <> <Nhan ma="KHOA" chu="Quá hạn" /></>}</td><td><Nhan ma={x.TrangThaiKy} /></td>
               <td className="so">{x.TienDo.SoChiSo}</td><td className="so">{x.TienDo.Dat}</td><td className="so">{x.TienDo.ChoThamDinh}</td><td className={`so ${x.TienDo.CanBoSung ? 'chu-do' : ''}`}>{x.TienDo.CanBoSung}</td><td className="so">{x.TienDo.ChuaNop}</td></tr>
           ))}{ds.length === 0 && <tr><td colSpan="8" className="mo">Đơn vị chưa được giao vào kỳ nào.</td></tr>}</tbody>
@@ -32,7 +32,7 @@ function NhapGiaTri({ chiSo, giaTri, onDoi, khoa }) {
 }
 
 // Hộp thoại một chỉ số: nhập, minh chứng, gửi, xem nhận xét thẩm định
-function HopChiSo({ maGiao, chiSo, kyMo, loaiMC, onDong, onDoi }) {
+function HopChiSo({ maHS, chiSo, kyMo, loaiMC, onDong, onDoi }) {
   const [maBC, setMaBC] = useState(chiSo.MaBC);
   const t = useTai(() => (maBC ? api(`/baocao/${maBC}`) : Promise.resolve(null)), [maBC]);
   const [giaTri, setGiaTri] = useState(chiSo.GiaTri ?? '');
@@ -45,7 +45,7 @@ function HopChiSo({ maGiao, chiSo, kyMo, loaiMC, onDong, onDoi }) {
 
   // Lưu nháp, trả về mã báo cáo (tạo mới nếu chưa có)
   const luu = async () => {
-    const kq = await api(`/baocao/giao/${maGiao}/chiso/${chiSo.MaChiSo}`, { method: 'PUT', body: { GiaTri: giaTri } });
+    const kq = await api(`/baocao/giao/${maHS}/chiso/${chiSo.MaChiSo}`, { method: 'PUT', body: { GiaTri: giaTri } });
     setCanhBao(kq.CanhBao);
     setMaBC(kq.MaBC);
     onDoi();
@@ -111,8 +111,8 @@ function HopChiSo({ maGiao, chiSo, kyMo, loaiMC, onDong, onDoi }) {
 }
 
 export function BaoCaoGiao() {
-  const { maGiao } = useParams();
-  const t = useTai(async () => { const [d, loaiMC] = await Promise.all([api(`/baocao/giao/${maGiao}`), api('/loaiminhchung')]); return { ...d, loaiMC }; }, [maGiao]);
+  const { maHS } = useParams();
+  const t = useTai(async () => { const [d, loaiMC] = await Promise.all([api(`/baocao/giao/${maHS}`), api('/loaiminhchung')]); return { ...d, loaiMC }; }, [maHS]);
   const [mo, setMo] = useState(null);
   return (
     <TrangThaiTai t={t}>{(d) => {
@@ -133,7 +133,7 @@ export function BaoCaoGiao() {
                 <td className="phai"><button className="nut nho" onClick={() => setMo(c)}>{kyMo && (!c.TrangThaiBC || ['NHAP', 'CAN_BO_SUNG'].includes(c.TrangThaiBC)) ? 'Nhập' : 'Xem'}</button></td></tr>
             ))}{d.ChiSo.length === 0 && <tr><td colSpan="7" className="mo">Không có chỉ số nào áp dụng cho đơn vị trong kỳ này.</td></tr>}</tbody>
           </table>
-          {mo && <HopChiSo maGiao={maGiao} chiSo={mo} kyMo={kyMo} loaiMC={d.loaiMC} onDong={() => setMo(null)} onDoi={t.taiLai} />}
+          {mo && <HopChiSo maHS={maHS} chiSo={mo} kyMo={kyMo} loaiMC={d.loaiMC} onDong={() => setMo(null)} onDoi={t.taiLai} />}
         </>
       );
     }}</TrangThaiTai>

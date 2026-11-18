@@ -32,7 +32,7 @@ r.put('/donvi/:id', chuTri, bat(async (req, res) => {
   const cu = await db('DONVI').where({ MaDV: id }).first();
   if (!cu) throw new Loi(404, 'Không tìm thấy đơn vị.');
   // Đổi loại đơn vị làm đổi tập chỉ số áp dụng nên chặn khi đơn vị đã được giao vào kỳ
-  if (cu.MaLoaiDV !== dong.MaLoaiDV && (await db('GIAODONVI').where({ MaDV: id }).first())) throw new Loi(409, 'Đơn vị đã được giao vào kỳ, không đổi được loại đơn vị.');
+  if (cu.MaLoaiDV !== dong.MaLoaiDV && (await db('HOSODANHGIA').where({ MaDV: id }).first())) throw new Loi(409, 'Đơn vị đã được giao vào kỳ, không đổi được loại đơn vị.');
   await db('DONVI').where({ MaDV: id }).update(dong);
   res.json({ ok: true });
 }));
@@ -40,7 +40,7 @@ r.put('/donvi/:id', chuTri, bat(async (req, res) => {
 // Danh mục đã dùng thì không xóa (BR24)
 r.delete('/donvi/:id', chuTri, bat(async (req, res) => {
   const id = Number(req.params.id);
-  if (await db('GIAODONVI').where({ MaDV: id }).first()) throw new Loi(409, 'Đơn vị đã được giao vào kỳ, không xóa được. (BR24)');
+  if (await db('HOSODANHGIA').where({ MaDV: id }).first()) throw new Loi(409, 'Đơn vị đã được giao vào kỳ, không xóa được. (BR24)');
   if (await db('NGUOIDUNG').where({ MaDV: id }).first()) throw new Loi(409, 'Đơn vị đang có tài khoản, không xóa được.');
   await db('DONVI').where({ MaDV: id }).del();
   res.json({ ok: true });

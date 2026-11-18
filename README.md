@@ -96,6 +96,8 @@ Gợi ý trình diễn: `dm_xb` nhập và gửi một chỉ số ở kỳ quý 
 
 Kịch bản demo từng chức năng, kèm ý trong báo cáo mà mỗi bước chứng minh: xem [HUONG_DAN_DEMO.md](HUONG_DAN_DEMO.md).
 
+Đối chiếu từng ràng buộc RB01–RB20 với nơi cài đặt trong code và test kiểm tra: xem [docs/DOI_CHIEU_RANG_BUOC.md](docs/DOI_CHIEU_RANG_BUOC.md).
+
 Mẫu một quy trình trọn vẹn tự tạo từ đầu (bộ chỉ số, kỳ, số liệu, tệp minh chứng, bảng điểm tính tay để đối chiếu): xem [mau/MAU_QUY_TRINH.md](mau/MAU_QUY_TRINH.md).
 
 ## Cấu trúc thư mục
@@ -103,18 +105,20 @@ Mẫu một quy trình trọn vẹn tự tạo từ đầu (bộ chỉ số, k�
 ```
 server/
   src/
-    schema.js          19 bảng và ràng buộc mức CSDL
+    schema.js          19 bảng, ràng buộc mức CSDL, nâng cấp CSDL bản cũ
     seed.js            dữ liệu mẫu (tạo qua chính các hàm dịch vụ)
     lib/scoring.js     công thức tính điểm, xếp hạng, mức độ (hàm thuần)
     lib/dates.js       xử lý hạn đến 23:59:59 giờ Việt Nam
     services/          nghiệp vụ: bochiso.js, ky.js, baocao.js, tonghop.js, nhapexcel.js
     routes/            API: hethong.js, danhmuc.js, nghiepvu.js
     middleware/auth.js xác thực JWT, phân quyền theo vai trò
-  test/                test tính điểm và luồng nghiệp vụ
+  test/                test tính điểm, luồng nghiệp vụ, nâng cấp CSDL
 client/
   src/pages/           màn hình theo vai trò
 database/
   is028_sqlserver.sql  script T-SQL tạo bảng (sinh tự động)
+docs/
+  DOI_CHIEU_RANG_BUOC.md  RB01–RB20 ↔ code ↔ test
 ```
 
 ## Đối chiếu Use Case
@@ -139,6 +143,8 @@ database/
 | Thông báo trong ứng dụng (BR15) | Có, gồm nhắc sắp tới hạn và quá hạn | `services/common.js`, `services/ky.js` → `nhacHan` |
 
 ## Điểm khác so với báo cáo
+
+- Tên bảng theo báo cáo đã sửa: `HOSODANHGIA` (khóa `MaHS`, trước là `GIAODONVI`/`MaGiao`) và `PHIEUTHAMDINH` (khóa `MaPhieuTD`, trước là `THAMDINH`/`MaTD`). CSDL tạo từ bản cũ tự nâng cấp khi chạy `start.bat`, giữ nguyên dữ liệu.
 
 - Trạng thái và kiểu công thức lưu bằng mã không dấu (`NHAP`, `CHO_THAM_DINH`, `TY_LE`…), nhãn tiếng Việt hiển thị ở giao diện. Miền giá trị vẫn đúng RB01–RB03.
 - Bảng `CHISO` thêm hai cột `KyHieu` (CS01…) và `DonViTinh` để hiển thị.

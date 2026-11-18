@@ -83,7 +83,7 @@ export function ThamDinhLichSu() {
         <table className="bang">
           <thead><tr><th>Thời gian</th><th>Kỳ</th><th>Đơn vị</th><th>Chỉ số</th><th>Vòng</th><th>Kết luận</th><th>Nhận xét</th><th /></tr></thead>
           <tbody>{ds.map((x) => (
-            <tr key={x.MaTD}><td className="khong-xuong">{fmtGio(x.NgayThamDinh)}</td><td>{x.TenKy}</td><td>{x.TenDV}</td><td>{x.KyHieu} {x.TenChiSo}</td><td>{x.VongThamDinh}</td><td><Nhan ma={x.KetLuan} /></td><td>{x.NhanXet || '—'}</td>
+            <tr key={x.MaPhieuTD}><td className="khong-xuong">{fmtGio(x.NgayThamDinh)}</td><td>{x.TenKy}</td><td>{x.TenDV}</td><td>{x.KyHieu} {x.TenChiSo}</td><td>{x.VongThamDinh}</td><td><Nhan ma={x.KetLuan} /></td><td>{x.NhanXet || '—'}</td>
               <td className="phai"><Link className="nut nho" to={`/tham-dinh/${x.MaBC}`}>Xem</Link></td></tr>
           ))}{ds.length === 0 && <tr><td colSpan="8" className="mo">Chưa thẩm định báo cáo nào.</td></tr>}</tbody>
         </table>

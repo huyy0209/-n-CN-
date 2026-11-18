@@ -57,7 +57,7 @@ r.delete('/ky/:id', chuTri, bat(async (req, res) => {
   const id = Number(req.params.id);
   const ky = await kySv.layKy(db, id);
   if (ky.TrangThaiKy !== 'NHAP') throw new Loi(409, 'Chỉ xóa được kỳ đang ở trạng thái Nháp.');
-  await db.transaction(async (trx) => { await trx('GIAODONVI').where({ MaKy: id }).del(); await trx('KYDANHGIA').where({ MaKy: id }).del(); });
+  await db.transaction(async (trx) => { await trx('HOSODANHGIA').where({ MaKy: id }).del(); await trx('KYDANHGIA').where({ MaKy: id }).del(); });
   res.json({ ok: true });
 }));
 
@@ -101,11 +101,11 @@ const dauMoi = vaiTro('DAU_MOI');
 
 // Các lượt giao của đơn vị mình
 r.get('/baocao/luot-giao', dauMoi, bat(async (req, res) => {
-  const ds = await db('GIAODONVI as g').join('KYDANHGIA as k', 'k.MaKy', 'g.MaKy').where({ 'g.MaDV': req.nguoi.MaDV }).whereNot({ 'k.TrangThaiKy': 'NHAP' })
-    .select('g.MaGiao', 'g.HanGiaHan', 'k.*').orderBy('k.NgayBatDau', 'desc');
+  const ds = await db('HOSODANHGIA as g').join('KYDANHGIA as k', 'k.MaKy', 'g.MaKy').where({ 'g.MaDV': req.nguoi.MaDV }).whereNot({ 'k.TrangThaiKy': 'NHAP' })
+    .select('g.MaHS', 'g.HanGiaHan', 'k.*').orderBy('k.NgayBatDau', 'desc');
   const kq = [];
   for (const x of ds) {
-    const td = (await kySv.tienDo(db, x.MaKy)).find((t) => t.MaGiao === x.MaGiao);
+    const td = (await kySv.tienDo(db, x.MaKy)).find((t) => t.MaHS === x.MaHS);
     kq.push({ ...dinhDangKy(x), HanGiaHan: ymd(x.HanGiaHan), TienDo: td });
   }
   res.json(kq);
@@ -116,10 +116,10 @@ r.get('/baocao/giao/:id', dauMoi, bat(async (req, res) => {
   const { giao, ky } = await bcSv.layGiao(db, Number(req.params.id));
   if (giao.MaDV !== req.nguoi.MaDV) throw new Loi(403, 'Bạn chỉ xem được báo cáo của đơn vị mình. (BR19)');
   const cs = await kySv.chiSoApDung(db, ky, giao.MaLoaiDV);
-  const bcs = await db('BAOCAOSOLIEU').where({ MaGiao: giao.MaGiao });
+  const bcs = await db('BAOCAOSOLIEU').where({ MaHS: giao.MaHS });
   const mcs = bcs.length ? await db('MINHCHUNG').whereIn('MaBC', bcs.map((b) => b.MaBC)).where({ TrangThaiMC: 'HIEU_LUC' }).select('MaBC').count({ n: '*' }).groupBy('MaBC') : [];
   res.json({
-    Giao: { MaGiao: giao.MaGiao, TenDV: giao.TenDV, HanHienHanh: kySv.hanHienHanh(ky, giao), DaQuaHan: kySv.daQuaHan(ky, giao) },
+    Giao: { MaHS: giao.MaHS, TenDV: giao.TenDV, HanHienHanh: kySv.hanHienHanh(ky, giao), DaQuaHan: kySv.daQuaHan(ky, giao) },
     Ky: dinhDangKy(ky),
     ChiSo: cs.map((c) => {
       const bc = bcs.find((b) => b.MaChiSo === c.MaChiSo);
@@ -209,11 +209,11 @@ r.post('/thamdinh/:maBC/ketluan', thamDinh, bat(async (req, res) => {
 }));
 // UC 4.4 lịch sử các vòng đã thẩm định của chính chuyên viên
 r.get('/thamdinh/lichsu', thamDinh, bat(async (req, res) => {
-  const ds = await db('THAMDINH as t').join('BAOCAOSOLIEU as b', 'b.MaBC', 't.MaBC').join('GIAODONVI as g', 'g.MaGiao', 'b.MaGiao')
+  const ds = await db('PHIEUTHAMDINH as t').join('BAOCAOSOLIEU as b', 'b.MaBC', 't.MaBC').join('HOSODANHGIA as g', 'g.MaHS', 'b.MaHS')
     .join('KYDANHGIA as k', 'k.MaKy', 'g.MaKy').join('DONVI as d', 'd.MaDV', 'g.MaDV').join('CHISO as c', 'c.MaChiSo', 'b.MaChiSo')
     .where({ 't.MaChuyenVien': req.nguoi.MaND })
-    .select('t.MaTD', 't.MaBC', 't.VongThamDinh', 't.KetLuan', 't.NhanXet', 't.NgayThamDinh', 'k.TenKy', 'd.TenDV', 'c.KyHieu', 'c.TenChiSo', 'b.TrangThaiBC')
-    .orderBy('t.MaTD', 'desc').limit(200);
+    .select('t.MaPhieuTD', 't.MaBC', 't.VongThamDinh', 't.KetLuan', 't.NhanXet', 't.NgayThamDinh', 'k.TenKy', 'd.TenDV', 'c.KyHieu', 'c.TenChiSo', 'b.TrangThaiBC')
+    .orderBy('t.MaPhieuTD', 'desc').limit(200);
   res.json(ds.map((x) => ({ ...x, NgayThamDinh: new Date(x.NgayThamDinh) })));
 }));
 

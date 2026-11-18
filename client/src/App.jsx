@@ -108,7 +108,7 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} /><Route path="/dashboard/:maKy" element={<Dashboard />} />
                 <Route path="/so-sanh" element={<SoSanh />} /><Route path="/so-sanh/:maKy" element={<SoSanh />} />
               </>}
-              {co('DAU_MOI') && <><Route path="/bao-cao" element={<BaoCao />} /><Route path="/bao-cao/:maGiao" element={<BaoCaoGiao />} /></>}
+              {co('DAU_MOI') && <><Route path="/bao-cao" element={<BaoCao />} /><Route path="/bao-cao/:maHS" element={<BaoCaoGiao />} /></>}
               {co('THAM_DINH') && <>
                 <Route path="/tham-dinh" element={<ThamDinhCho />} /><Route path="/tham-dinh/:maBC" element={<ThamDinhChiTiet />} />
                 <Route path="/tham-dinh-lich-su" element={<ThamDinhLichSu />} />

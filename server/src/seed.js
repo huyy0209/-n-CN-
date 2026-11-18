@@ -94,15 +94,15 @@ async function seed(db) {
   const tep = { TenTep: 'Minh chứng mẫu.pdf', DuongDan: tepMau, DungLuong: Buffer.byteLength(pdf) };
 
   // Nhập + đính kèm + gửi một chỉ số; trả về MaBC
-  async function nop(maGiao, nguoi, kyHieu, giaTri, luc, { gui = true } = {}) {
-    const { MaBC } = await bcSv.luuNhap(db, maGiao, CS[kyHieu], giaTri, nguoi);
+  async function nop(maHS, nguoi, kyHieu, giaTri, luc, { gui = true } = {}) {
+    const { MaBC } = await bcSv.luuNhap(db, maHS, CS[kyHieu], giaTri, nguoi);
     await bcSv.themMinhChung(db, MaBC, tep, mcIds[0], nguoi, luc);
     if (gui) await bcSv.guiBaoCao(db, MaBC, nguoi, luc);
     return MaBC;
   }
   // Người thẩm định không cùng đơn vị với báo cáo (BR18)
   const nguoiTD = (maDV) => (maDV === dv.skhcn ? nd.td_syt : nd.td_skhcn);
-  const maGiaoCua = async (maKy) => Object.fromEntries((await db('GIAODONVI').where({ MaKy: maKy })).map((g) => [g.MaDV, g.MaGiao]));
+  const maHSCua = async (maKy) => Object.fromEntries((await db('HOSODANHGIA').where({ MaKy: maKy })).map((g) => [g.MaDV, g.MaHS]));
   const dauMoi = { [dv.skhcn]: nd.dm_skhcn, [dv.syt]: nd.dm_syt, [dv.snv]: nd.dm_snv, [dv.pa]: nd.dm_pa, [dv.xb]: nd.dm_xb, [dv.dkc]: nd.dm_dkc };
   const tatCaDV = Object.values(dv);
 
@@ -110,7 +110,7 @@ async function seed(db) {
   const kyNam = await kySv.taoKy(db, { TenKy: 'Kỳ năm 2025', LoaiKy: 'NAM', NgayBatDau: '2025-01-01', NgayKetThuc: '2025-12-31', HanNop: '2026-01-15', NgayChot: '2026-02-28', MaBo: maBo });
   await kySv.giaoDonVi(db, kyNam, tatCaDV, nd.chutri);
   await kySv.moKy(db, kyNam, nd.chutri, vn('2025-12-01T08:00:00'));
-  const gNam = await maGiaoCua(kyNam);
+  const gNam = await maHSCua(kyNam);
   const soLieuNam = {
     [dv.skhcn]: { CS01: 1, CS02: 7, CS03: 1, CS04: 95, CS05: 100, CS06: 1, CS07: 1, CS09: 90, CS15: 1 },
     [dv.syt]: { CS01: 1, CS02: 3, CS03: 1, CS04: 80, CS05: 88, CS06: 1, CS07: 0, CS09: 60, CS15: 0 },
@@ -131,7 +131,7 @@ async function seed(db) {
   const kyQ3 = await kySv.taoKy(db, { TenKy: 'Kỳ quý 3 năm 2026', LoaiKy: 'QUY', NgayBatDau: '2026-07-01', NgayKetThuc: '2026-09-30', HanNop: '2026-10-10', NgayChot: '2026-10-31', MaBo: maBo });
   await kySv.giaoDonVi(db, kyQ3, tatCaDV, nd.chutri);
   await kySv.moKy(db, kyQ3, nd.chutri, vn('2026-09-25T08:00:00'));
-  const gQ3 = await maGiaoCua(kyQ3);
+  const gQ3 = await maHSCua(kyQ3);
   const dungHan = vn('2026-10-08T09:00:00');
   const tre = vn('2026-10-14T09:00:00');
   const soLieuQ3 = { // [giá trị, thời điểm gửi, kết luận]
@@ -154,7 +154,7 @@ async function seed(db) {
   const kyQ4 = await kySv.taoKy(db, { TenKy: 'Kỳ quý 4 năm 2026', LoaiKy: 'QUY', NgayBatDau: '2026-10-01', NgayKetThuc: '2026-12-31', HanNop: '2027-01-10', NgayChot: '2027-01-31', MaBo: maBo });
   await kySv.giaoDonVi(db, kyQ4, tatCaDV, nd.chutri);
   await kySv.moKy(db, kyQ4, nd.chutri, vn('2026-11-01T08:00:00'));
-  const gQ4 = await maGiaoCua(kyQ4);
+  const gQ4 = await maHSCua(kyQ4);
   await nop(gQ4[dv.xb], nd.dm_xb, 'CS08', 70, vn('2026-11-05T09:00:00'), { gui: false }); // một báo cáo nháp sẵn
 
   // --- Hai kỳ đã chốt trước đó, để có dữ liệu cho So sánh các kỳ (UC 5.2) ---
@@ -163,7 +163,7 @@ async function seed(db) {
     const maKy = await kySv.taoKy(db, { ...thongTin, MaBo: maBo });
     await kySv.giaoDonVi(db, maKy, Object.keys(soLieu).map(Number), nd.chutri);
     await kySv.moKy(db, maKy, nd.chutri, vn(lucMo));
-    const g = await maGiaoCua(maKy);
+    const g = await maHSCua(maKy);
     for (const maDV of Object.keys(soLieu).map(Number)) {
       for (const [kyHieu, giaTri] of Object.entries(soLieu[maDV])) {
         const maBC = await nop(g[maDV], dauMoi[maDV], kyHieu, giaTri, vn(lucGui));

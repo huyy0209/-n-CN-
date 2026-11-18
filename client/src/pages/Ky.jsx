@@ -92,13 +92,13 @@ export function KyChiTiet() {
           <table className="bang">
             <thead><tr><th>Đơn vị</th><th>Loại</th><th>Hạn hiện hành</th><th className="so">Chỉ số</th><th className="so">Đạt</th><th className="so">Chờ thẩm định</th><th className="so">Cần bổ sung</th><th className="so">Chưa gửi</th><th className="so">Gửi trễ</th>{chuTri && <th />}</tr></thead>
             <tbody>{ky.TienDo.map((g) => (
-              <tr key={g.MaGiao}>
+              <tr key={g.MaHS}>
                 <td>{g.TenDV}</td><td>{g.TenLoaiDV}</td>
                 <td>{fmtNgay(g.HanHienHanh)}{g.DaGiaHan && <small className="mo"> (đã gia hạn)</small>}{g.DaQuaHan && dangMo && <> <Nhan ma="KHOA" chu="Quá hạn" /></>}</td>
                 <td className="so">{g.SoChiSo}</td><td className="so">{g.Dat}</td><td className="so">{g.ChoThamDinh}</td><td className="so">{g.CanBoSung}</td>
                 <td className={`so ${g.ChuaGuiQuaHan ? 'chu-do' : ''}`}>{g.ChuaNop}</td><td className={`so ${g.GuiTre ? 'chu-do' : ''}`}>{g.GuiTre}</td>
                 {chuTri && <td className="phai khong-xuong">
-                  {nhap && <button className="nut nho nguy" onClick={() => lam(() => api(`/giao/${g.MaGiao}`, { method: 'DELETE' }))}>Bỏ giao</button>}
+                  {nhap && <button className="nut nho nguy" onClick={() => lam(() => api(`/giao/${g.MaHS}`, { method: 'DELETE' }))}>Bỏ giao</button>}
                   {dangMo && !g.DaQuaHan && <button className="nut nho" onClick={() => { tt.setLoi(null); setGiaHan({ ...g, HanMoi: '' }); }}>Gia hạn</button>}
                 </td>}
               </tr>
@@ -115,7 +115,7 @@ export function KyChiTiet() {
           )}
           {giaHan && (
             <HopThoai tieuDe={`Gia hạn cho ${giaHan.TenDV}`} onDong={() => setGiaHan(null)}>
-              <form onSubmit={(e) => { e.preventDefault(); lam(() => api(`/giao/${giaHan.MaGiao}/giahan`, { method: 'POST', body: { HanMoi: giaHan.HanMoi } })).then((ok) => ok && setGiaHan(null)); }}>
+              <form onSubmit={(e) => { e.preventDefault(); lam(() => api(`/giao/${giaHan.MaHS}/giahan`, { method: 'POST', body: { HanMoi: giaHan.HanMoi } })).then((ok) => ok && setGiaHan(null)); }}>
                 <BaoLoi loi={tt.loi} />
                 <p>Hạn hiện hành: <strong>{fmtNgay(giaHan.HanHienHanh)}</strong>. Hạn mới phải sau hạn hiện hành và không vượt ngày chốt {fmtNgay(ky.NgayChot)}.</p>
                 <Truong nhan="Hạn mới"><input type="date" required min={giaHan.HanHienHanh} max={ky.NgayChot} value={giaHan.HanMoi} onChange={(e) => setGiaHan({ ...giaHan, HanMoi: e.target.value })} /></Truong>

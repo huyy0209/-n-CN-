@@ -33,14 +33,14 @@ test('kỳ năm 2025 đã chốt: Xã B đạt 81,76 điểm, đúng Phụ lục
   assert.equal(xb.TenMucDo, 'Tốt');
   // hạng theo loại nằm trong 1..3, hạng chung trong 1..6
   assert.ok(KetQua.every((k) => k.HangTheoLoai >= 1 && k.HangTheoLoai <= 3 && k.HangChung >= 1 && k.HangChung <= 6));
-  const ct = await kySv.chiTietDiem(db, xb.MaGiao);
+  const ct = await kySv.chiTietDiem(db, xb.MaHS);
   assert.equal(ct.TongTrongSo, 85);
   assert.equal(ct.ChiSo.find((c) => c.KyHieu === 'CS04').Diem, 10.5);
 });
 
 test('kỳ đã chốt bị khóa (RB19) và không chốt lại được', async () => {
-  const g = await db('GIAODONVI').where({ MaKy: s.kyNam, MaDV: s.dv.xb }).first();
-  await tuChoi(() => bcSv.luuNhap(db, g.MaGiao, s.CS.CS01, 0, s.nd.dm_xb), /đã chốt/);
+  const g = await db('HOSODANHGIA').where({ MaKy: s.kyNam, MaDV: s.dv.xb }).first();
+  await tuChoi(() => bcSv.luuNhap(db, g.MaHS, s.CS.CS01, 0, s.nd.dm_xb), /đã chốt/);
   await tuChoi(() => kySv.chotKy(db, s.kyNam, s.nd.chutri), /Chưa chốt được/);
 });
 
@@ -59,28 +59,28 @@ test('bộ đã ban hành bị khóa; sao chép tạo bộ Nháp đầy đủ (B
 });
 
 test('đầu mối chỉ sửa dữ liệu đơn vị mình (BR19); chỉ số không áp dụng bị chặn (RB11)', async () => {
-  const g = await db('GIAODONVI').where({ MaKy: s.kyQ4, MaDV: s.dv.xb }).first();
-  await tuChoi(() => bcSv.luuNhap(db, g.MaGiao, s.CS.CS08, 50, s.nd.dm_pa), /đơn vị mình/);
-  await tuChoi(() => bcSv.luuNhap(db, g.MaGiao, s.CS.CS01, 1, s.nd.dm_xb), /không áp dụng/); // CS01 tần suất năm, kỳ quý
+  const g = await db('HOSODANHGIA').where({ MaKy: s.kyQ4, MaDV: s.dv.xb }).first();
+  await tuChoi(() => bcSv.luuNhap(db, g.MaHS, s.CS.CS08, 50, s.nd.dm_pa), /đơn vị mình/);
+  await tuChoi(() => bcSv.luuNhap(db, g.MaHS, s.CS.CS01, 1, s.nd.dm_xb), /không áp dụng/); // CS01 tần suất năm, kỳ quý
 });
 
 test('lưu nháp ngoài miền chỉ cảnh báo, gửi thì chặn; thiếu minh chứng bắt buộc cũng chặn (BR06, BR21, RB16)', async () => {
-  const g = await db('GIAODONVI').where({ MaKy: s.kyQ4, MaDV: s.dv.pa }).first();
-  const { MaBC, CanhBao } = await bcSv.luuNhap(db, g.MaGiao, s.CS.CS11, 150, s.nd.dm_pa);
+  const g = await db('HOSODANHGIA').where({ MaKy: s.kyQ4, MaDV: s.dv.pa }).first();
+  const { MaBC, CanhBao } = await bcSv.luuNhap(db, g.MaHS, s.CS.CS11, 150, s.nd.dm_pa);
   assert.match(CanhBao, /ngoài miền/);
   await assert.rejects(() => bcSv.guiBaoCao(db, MaBC, s.nd.dm_pa), (e) => e.chiTiet.length === 2);
-  await tuChoi(() => bcSv.luuNhap(db, g.MaGiao, s.CS.CS11, 'abc', s.nd.dm_pa), /phải là số/);
+  await tuChoi(() => bcSv.luuNhap(db, g.MaHS, s.CS.CS11, 'abc', s.nd.dm_pa), /phải là số/);
 });
 
 test('vòng thẩm định: Chưa đạt cần nhận xét, gửi lại không ghi đè NgayGui, không tự thẩm định (BR07, BR09, BR18)', async () => {
-  const g = await db('GIAODONVI').where({ MaKy: s.kyQ4, MaDV: s.dv.syt }).first();
+  const g = await db('HOSODANHGIA').where({ MaKy: s.kyQ4, MaDV: s.dv.syt }).first();
   const luc1 = vn('2026-11-10T09:00:00');
-  const { MaBC } = await bcSv.luuNhap(db, g.MaGiao, s.CS.CS12, 91, s.nd.dm_syt);
+  const { MaBC } = await bcSv.luuNhap(db, g.MaHS, s.CS.CS12, 91, s.nd.dm_syt);
   const mc = await db('LOAIMINHCHUNG').first();
   const maMC = await bcSv.themMinhChung(db, MaBC, { TenTep: 'a.pdf', DuongDan: 'minh-chung-mau.pdf', DungLuong: 10 }, mc.MaLoaiMC, s.nd.dm_syt, luc1);
   await bcSv.guiBaoCao(db, MaBC, s.nd.dm_syt, luc1);
   // đang chờ thẩm định thì đầu mối không sửa được
-  await tuChoi(() => bcSv.luuNhap(db, g.MaGiao, s.CS.CS12, 92, s.nd.dm_syt), /không sửa được/);
+  await tuChoi(() => bcSv.luuNhap(db, g.MaHS, s.CS.CS12, 92, s.nd.dm_syt), /không sửa được/);
   // chuyên viên cùng đơn vị bị chặn; danh sách chờ của họ không có báo cáo này
   await tuChoi(() => bcSv.ketLuan(db, MaBC, 'DAT', null, s.nd.td_syt), /đơn vị mình/);
   assert.ok(!(await bcSv.danhSachCho(db, s.nd.td_syt)).some((x) => x.MaBC === MaBC));
@@ -103,17 +103,17 @@ test('vòng thẩm định: Chưa đạt cần nhận xét, gửi lại không g
 });
 
 test('gia hạn: sau hạn hiện hành, không vượt ngày chốt, nhiều lần, hết hạn thì chặn (BR16, BR22, BR25)', async () => {
-  const g = await db('GIAODONVI').where({ MaKy: s.kyQ4, MaDV: s.dv.dkc }).first(); // hạn 10/01/2027, chốt 31/01/2027
+  const g = await db('HOSODANHGIA').where({ MaKy: s.kyQ4, MaDV: s.dv.dkc }).first(); // hạn 10/01/2027, chốt 31/01/2027
   const luc = vn('2026-12-01T09:00:00');
-  await tuChoi(() => kySv.giaHan(db, g.MaGiao, '2027-01-10', s.nd.chutri, luc), /phải sau hạn hiện hành/);
-  await tuChoi(() => kySv.giaHan(db, g.MaGiao, '2027-02-01', s.nd.chutri, luc), /không được vượt ngày chốt/);
-  await kySv.giaHan(db, g.MaGiao, '2027-01-15', s.nd.chutri, luc);
+  await tuChoi(() => kySv.giaHan(db, g.MaHS, '2027-01-10', s.nd.chutri, luc), /phải sau hạn hiện hành/);
+  await tuChoi(() => kySv.giaHan(db, g.MaHS, '2027-02-01', s.nd.chutri, luc), /không được vượt ngày chốt/);
+  await kySv.giaHan(db, g.MaHS, '2027-01-15', s.nd.chutri, luc);
   // 23:59:00 ngày hạn vẫn còn hạn (BR25) -> gia hạn lần 2 được
-  await kySv.giaHan(db, g.MaGiao, '2027-01-20', s.nd.chutri, vn('2027-01-15T23:59:00'));
-  await tuChoi(() => kySv.giaHan(db, g.MaGiao, '2027-01-25', s.nd.chutri, vn('2027-01-21T00:00:01')), /quá hạn hiện hành/);
+  await kySv.giaHan(db, g.MaHS, '2027-01-20', s.nd.chutri, vn('2027-01-15T23:59:00'));
+  await tuChoi(() => kySv.giaHan(db, g.MaHS, '2027-01-25', s.nd.chutri, vn('2027-01-21T00:00:01')), /quá hạn hiện hành/);
   // kỳ quý 3 đã quá hạn từ 10/10/2026
-  const g3 = await db('GIAODONVI').where({ MaKy: s.kyQ3 }).first();
-  await tuChoi(() => kySv.giaHan(db, g3.MaGiao, '2026-10-20', s.nd.chutri, vn('2026-10-12T09:00:00')), /quá hạn hiện hành/);
+  const g3 = await db('HOSODANHGIA').where({ MaKy: s.kyQ3 }).first();
+  await tuChoi(() => kySv.giaHan(db, g3.MaHS, '2026-10-20', s.nd.chutri, vn('2026-10-12T09:00:00')), /quá hạn hiện hành/);
 });
 
 test('tiến độ kỳ quý 3: đếm trễ hạn theo lần gửi đầu (BR07)', async () => {

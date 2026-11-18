@@ -59,13 +59,13 @@ async function giaoDonVi(db, maKy, dsMaDV, nguoi, now = new Date()) {
   return db.transaction(async (trx) => {
     const ky = await layKy(trx, maKy);
     if (ky.TrangThaiKy === 'DA_CHOT') throw new Loi(409, 'Kỳ đã chốt, không giao thêm đơn vị. (RB19)');
-    const daGiao = (await trx('GIAODONVI').where({ MaKy: maKy }).select('MaDV')).map((g) => g.MaDV);
+    const daGiao = (await trx('HOSODANHGIA').where({ MaKy: maKy }).select('MaDV')).map((g) => g.MaDV);
     let soMoi = 0;
     for (const maDV of [...new Set(dsMaDV)]) {
       if (daGiao.includes(maDV)) continue;
       const dv = await trx('DONVI').where({ MaDV: maDV }).first();
       if (!dv) throw new Loi(422, `Đơn vị #${maDV} không tồn tại.`);
-      await trx('GIAODONVI').insert({ MaKy: maKy, MaDV: maDV });
+      await trx('HOSODANHGIA').insert({ MaKy: maKy, MaDV: maDV });
       soMoi++;
       if (ky.TrangThaiKy === 'DANG_MO') {
         await guiThongBao(trx, await nguoiTheoVaiTro(trx, 'DAU_MOI', maDV), 'MO_KY',
@@ -78,13 +78,13 @@ async function giaoDonVi(db, maKy, dsMaDV, nguoi, now = new Date()) {
 }
 
 // Bỏ lượt giao: chỉ khi kỳ còn Nháp (BR24: đã dùng thì không xóa)
-async function boGiao(db, maGiao) {
+async function boGiao(db, maHS) {
   return db.transaction(async (trx) => {
-    const giao = await trx('GIAODONVI').where({ MaGiao: maGiao }).first();
+    const giao = await trx('HOSODANHGIA').where({ MaHS: maHS }).first();
     if (!giao) throw new Loi(404, 'Không tìm thấy lượt giao.');
     const ky = await layKy(trx, giao.MaKy);
     if (ky.TrangThaiKy !== 'NHAP') throw new Loi(409, 'Chỉ bỏ được lượt giao khi kỳ còn ở trạng thái Nháp.');
-    await trx('GIAODONVI').where({ MaGiao: maGiao }).del();
+    await trx('HOSODANHGIA').where({ MaHS: maHS }).del();
   });
 }
 
@@ -95,7 +95,7 @@ async function moKy(db, maKy, nguoi, now = new Date()) {
     if (ky.TrangThaiKy !== 'NHAP') throw new Loi(409, 'Chỉ mở được kỳ đang ở trạng thái Nháp.');
     const bo = await trx('BOCHISO').where({ MaBo: ky.MaBo }).first();
     if (bo.TrangThaiBo !== 'BAN_HANH') throw new Loi(409, 'Bộ chỉ số của kỳ không còn ở trạng thái Ban hành. (RB13)');
-    const giaos = await trx('GIAODONVI').where({ MaKy: maKy });
+    const giaos = await trx('HOSODANHGIA').where({ MaKy: maKy });
     if (giaos.length === 0) throw new Loi(422, 'Kỳ cần ít nhất một lượt giao đơn vị mới được mở. (BR17)');
     await trx('KYDANHGIA').where({ MaKy: maKy }).update({ TrangThaiKy: 'DANG_MO' });
     for (const g of giaos) {
@@ -107,9 +107,9 @@ async function moKy(db, maKy, nguoi, now = new Date()) {
 }
 
 // UC 2.3 - Gia hạn một lượt giao (BR16, BR22, RB18)
-async function giaHan(db, maGiao, hanMoi, nguoi, now = new Date()) {
+async function giaHan(db, maHS, hanMoi, nguoi, now = new Date()) {
   return db.transaction(async (trx) => {
-    const giao = await trx('GIAODONVI').where({ MaGiao: maGiao }).first();
+    const giao = await trx('HOSODANHGIA').where({ MaHS: maHS }).first();
     if (!giao) throw new Loi(404, 'Không tìm thấy lượt giao.');
     const ky = await layKy(trx, giao.MaKy);
     if (ky.TrangThaiKy !== 'DANG_MO') throw new Loi(409, 'Chỉ gia hạn khi kỳ đang mở.');
@@ -118,7 +118,7 @@ async function giaHan(db, maGiao, hanMoi, nguoi, now = new Date()) {
     if (daQuaHan(ky, giao, now)) throw new Loi(409, `Đã quá hạn hiện hành (${ddmmyyyy(hanCu)}), không gia hạn được. (RB18)`);
     if (!(hanMoi > hanCu)) throw new Loi(422, `Hạn mới phải sau hạn hiện hành (${ddmmyyyy(hanCu)}). (BR22)`);
     if (hanMoi > ymd(ky.NgayChot)) throw new Loi(422, `Hạn mới không được vượt ngày chốt (${ddmmyyyy(ky.NgayChot)}). (RB18)`);
-    await trx('GIAODONVI').where({ MaGiao: maGiao }).update({ HanGiaHan: hanMoi });
+    await trx('HOSODANHGIA').where({ MaHS: maHS }).update({ HanGiaHan: hanMoi });
     const dv = await trx('DONVI').where({ MaDV: giao.MaDV }).first();
     await guiThongBao(trx, await nguoiTheoVaiTro(trx, 'DAU_MOI', giao.MaDV), 'GIA_HAN',
       `Kỳ "${ky.TenKy}": đơn vị được gia hạn nộp báo cáo đến ${ddmmyyyy(hanMoi)}.`, now);
@@ -129,22 +129,22 @@ async function giaHan(db, maGiao, hanMoi, nguoi, now = new Date()) {
 // Tiến độ của kỳ (UC 5.1): theo từng lượt giao, đếm báo cáo theo trạng thái, xác định trễ hạn (BR07)
 async function tienDo(trx, maKy, now = new Date()) {
   const ky = await layKy(trx, maKy);
-  const giaos = await trx('GIAODONVI as g').join('DONVI as d', 'd.MaDV', 'g.MaDV').join('LOAIDONVI as l', 'l.MaLoaiDV', 'd.MaLoaiDV')
+  const giaos = await trx('HOSODANHGIA as g').join('DONVI as d', 'd.MaDV', 'g.MaDV').join('LOAIDONVI as l', 'l.MaLoaiDV', 'd.MaLoaiDV')
     .where({ 'g.MaKy': maKy }).select('g.*', 'd.TenDV', 'd.MaLoaiDV', 'l.TenLoaiDV').orderBy(['d.MaLoaiDV', 'd.TenDV']);
   const apDung = await chiSoApDung(trx, ky);
-  const bcs = await trx('BAOCAOSOLIEU as b').join('GIAODONVI as g', 'g.MaGiao', 'b.MaGiao').where({ 'g.MaKy': maKy }).select('b.*');
+  const bcs = await trx('BAOCAOSOLIEU as b').join('HOSODANHGIA as g', 'g.MaHS', 'b.MaHS').where({ 'g.MaKy': maKy }).select('b.*');
   return giaos.map((g) => {
     const han = hanHienHanh(ky, g);
     const hetHan = cuoiNgayVN(han);
     const cs = apDung.filter((c) => c.MaLoaiDV === g.MaLoaiDV);
-    const cuaGiao = bcs.filter((b) => b.MaGiao === g.MaGiao && cs.some((c) => c.MaChiSo === b.MaChiSo));
+    const cuaGiao = bcs.filter((b) => b.MaHS === g.MaHS && cs.some((c) => c.MaChiSo === b.MaChiSo));
     const dem = (tt) => cuaGiao.filter((b) => b.TrangThaiBC === tt).length;
     const daGui = cuaGiao.filter((b) => b.NgayGui !== null);
     // Trễ: lần gửi đầu sau hạn, hoặc chưa gửi mà đã quá hạn
     const guiTre = daGui.filter((b) => new Date(b.NgayGui) > hetHan).length;
     const chuaGui = cs.length - daGui.length;
     return {
-      MaGiao: g.MaGiao, MaDV: g.MaDV, TenDV: g.TenDV, MaLoaiDV: g.MaLoaiDV, TenLoaiDV: g.TenLoaiDV,
+      MaHS: g.MaHS, MaDV: g.MaDV, TenDV: g.TenDV, MaLoaiDV: g.MaLoaiDV, TenLoaiDV: g.TenLoaiDV,
       HanHienHanh: han, DaGiaHan: !!g.HanGiaHan, DaQuaHan: now > hetHan,
       SoChiSo: cs.length, Dat: dem('DAT'), ChoThamDinh: dem('CHO_THAM_DINH'), CanBoSung: dem('CAN_BO_SUNG'),
       Nhap: dem('NHAP'), ChuaNop: chuaGui, GuiTre: guiTre, ChuaGuiQuaHan: now > hetHan ? chuaGui : 0,
@@ -154,15 +154,15 @@ async function tienDo(trx, maKy, now = new Date()) {
 
 // Tính điểm chi tiết của một lượt giao: điểm từng chỉ số, từng nhóm, tổng điểm.
 // Điểm chỉ số và điểm nhóm không lưu, tính khi cần (BR11). Chỉ báo cáo Đạt mới có điểm (BR10).
-async function chiTietDiem(trx, maGiao) {
-  const giao = await trx('GIAODONVI as g').join('DONVI as d', 'd.MaDV', 'g.MaDV').where({ 'g.MaGiao': maGiao }).select('g.*', 'd.TenDV', 'd.MaLoaiDV').first();
+async function chiTietDiem(trx, maHS) {
+  const giao = await trx('HOSODANHGIA as g').join('DONVI as d', 'd.MaDV', 'g.MaDV').where({ 'g.MaHS': maHS }).select('g.*', 'd.TenDV', 'd.MaLoaiDV').first();
   if (!giao) throw new Loi(404, 'Không tìm thấy lượt giao.');
   const ky = await layKy(trx, giao.MaKy);
   const nhoms = await trx('NHOMCHISO').where({ MaBo: ky.MaBo }).orderBy('MaNhom');
   const cs = await chiSoApDung(trx, ky, giao.MaLoaiDV);
   const maCS = cs.map((c) => c.MaChiSo);
   const bacs = maCS.length ? await trx('BACDIEM').whereIn('MaChiSo', maCS) : [];
-  const bcs = await trx('BAOCAOSOLIEU').where({ MaGiao: maGiao });
+  const bcs = await trx('BAOCAOSOLIEU').where({ MaHS: maHS });
   return tinhMotGiao(nhoms, cs, bacs, bcs, giao, ky);
 }
 
@@ -180,7 +180,7 @@ function tinhMotGiao(nhoms, cs, bacs, bcs, giao, ky) {
     };
   });
   const tong = tinhTongDiem(nhoms, cs, diemMap);
-  return { MaGiao: giao.MaGiao, MaDV: giao.MaDV, TenDV: giao.TenDV, MaLoaiDV: giao.MaLoaiDV, MaKy: ky.MaKy, TenKy: ky.TenKy, ...tong, ChiSo: chiSo };
+  return { MaHS: giao.MaHS, MaDV: giao.MaDV, TenDV: giao.TenDV, MaLoaiDV: giao.MaLoaiDV, MaKy: ky.MaKy, TenKy: ky.TenKy, ...tong, ChiSo: chiSo };
 }
 
 // Điểm chi tiết của mọi lượt giao trong kỳ, nạp dữ liệu một lần (dùng cho so sánh, dashboard, xuất tệp)
@@ -190,9 +190,9 @@ async function diemTatCa(trx, maKy) {
   const apDung = await chiSoApDung(trx, ky);
   const maCS = [...new Set(apDung.map((c) => c.MaChiSo))];
   const bacs = maCS.length ? await trx('BACDIEM').whereIn('MaChiSo', maCS) : [];
-  const giaos = await trx('GIAODONVI as g').join('DONVI as d', 'd.MaDV', 'g.MaDV').where({ 'g.MaKy': maKy }).select('g.*', 'd.TenDV', 'd.MaLoaiDV');
-  const bcs = await trx('BAOCAOSOLIEU as b').join('GIAODONVI as g', 'g.MaGiao', 'b.MaGiao').where({ 'g.MaKy': maKy }).select('b.*');
-  return giaos.map((g) => tinhMotGiao(nhoms, apDung.filter((c) => c.MaLoaiDV === g.MaLoaiDV), bacs, bcs.filter((b) => b.MaGiao === g.MaGiao), g, ky));
+  const giaos = await trx('HOSODANHGIA as g').join('DONVI as d', 'd.MaDV', 'g.MaDV').where({ 'g.MaKy': maKy }).select('g.*', 'd.TenDV', 'd.MaLoaiDV');
+  const bcs = await trx('BAOCAOSOLIEU as b').join('HOSODANHGIA as g', 'g.MaHS', 'b.MaHS').where({ 'g.MaKy': maKy }).select('b.*');
+  return giaos.map((g) => tinhMotGiao(nhoms, apDung.filter((c) => c.MaLoaiDV === g.MaLoaiDV), bacs, bcs.filter((b) => b.MaHS === g.MaHS), g, ky));
 }
 
 // UC 2.4 bước 2-3: kiểm tra điều kiện và thống kê trước khi chốt
@@ -222,26 +222,26 @@ async function chotKy(db, maKy, nguoi, now = new Date()) {
     const apDung = await chiSoApDung(trx, ky);
     const maCS = [...new Set(apDung.map((c) => c.MaChiSo))];
     const bacs = maCS.length ? await trx('BACDIEM').whereIn('MaChiSo', maCS) : [];
-    const giaos = await trx('GIAODONVI as g').join('DONVI as d', 'd.MaDV', 'g.MaDV').where({ 'g.MaKy': maKy }).select('g.*', 'd.TenDV', 'd.MaLoaiDV');
-    const bcs = await trx('BAOCAOSOLIEU as b').join('GIAODONVI as g', 'g.MaGiao', 'b.MaGiao').where({ 'g.MaKy': maKy }).select('b.*');
+    const giaos = await trx('HOSODANHGIA as g').join('DONVI as d', 'd.MaDV', 'g.MaDV').where({ 'g.MaKy': maKy }).select('g.*', 'd.TenDV', 'd.MaLoaiDV');
+    const bcs = await trx('BAOCAOSOLIEU as b').join('HOSODANHGIA as g', 'g.MaHS', 'b.MaHS').where({ 'g.MaKy': maKy }).select('b.*');
 
     // Bước 5-7: điểm chỉ số, điểm nhóm, tổng điểm, mức độ
     const kq = giaos.map((g) => {
       const cs = apDung.filter((c) => c.MaLoaiDV === g.MaLoaiDV);
-      const t = tinhMotGiao(nhoms, cs, bacs, bcs.filter((b) => b.MaGiao === g.MaGiao), g, ky);
-      return { MaGiao: g.MaGiao, MaDV: g.MaDV, MaLoaiDV: g.MaLoaiDV, TongDiem: t.TongDiem, MucDo: xacDinhMucDo(mucDos, t.TongDiem) };
+      const t = tinhMotGiao(nhoms, cs, bacs, bcs.filter((b) => b.MaHS === g.MaHS), g, ky);
+      return { MaHS: g.MaHS, MaDV: g.MaDV, MaLoaiDV: g.MaLoaiDV, TongDiem: t.TongDiem, MucDo: xacDinhMucDo(mucDos, t.TongDiem) };
     });
     // Bước 8: xếp hạng chung và theo loại đơn vị, đồng điểm đồng hạng
-    const hangChung = xepHang(kq.map((k) => ({ id: k.MaGiao, diem: k.TongDiem })));
+    const hangChung = xepHang(kq.map((k) => ({ id: k.MaHS, diem: k.TongDiem })));
     const hangLoai = new Map();
     for (const loai of new Set(kq.map((k) => k.MaLoaiDV))) {
-      for (const [id, h] of xepHang(kq.filter((k) => k.MaLoaiDV === loai).map((k) => ({ id: k.MaGiao, diem: k.TongDiem })))) hangLoai.set(id, h);
+      for (const [id, h] of xepHang(kq.filter((k) => k.MaLoaiDV === loai).map((k) => ({ id: k.MaHS, diem: k.TongDiem })))) hangLoai.set(id, h);
     }
     // Bước 9: lưu kết quả một lần (RB20)
     for (const k of kq) {
       await trx('KETQUADANHGIA').insert({
-        TongDiem: k.TongDiem, HangTheoLoai: hangLoai.get(k.MaGiao), HangChung: hangChung.get(k.MaGiao),
-        MaGiao: k.MaGiao, MaMucDo: k.MucDo ? k.MucDo.MaMucDo : null,
+        TongDiem: k.TongDiem, HangTheoLoai: hangLoai.get(k.MaHS), HangChung: hangChung.get(k.MaHS),
+        MaHS: k.MaHS, MaMucDo: k.MucDo ? k.MucDo.MaMucDo : null,
       });
     }
     // Bước 10: khóa kỳ. Điều kiện TrangThaiKy chống hai người chốt cùng lúc.
@@ -261,10 +261,10 @@ async function chotKy(db, maKy, nguoi, now = new Date()) {
 async function ketQuaKy(trx, maKy) {
   const ky = await layKy(trx, maKy);
   if (ky.TrangThaiKy !== 'DA_CHOT') throw new Loi(409, 'Kỳ chưa chốt nên chưa có kết quả.');
-  const ds = await trx('KETQUADANHGIA as k').join('GIAODONVI as g', 'g.MaGiao', 'k.MaGiao').join('DONVI as d', 'd.MaDV', 'g.MaDV')
+  const ds = await trx('KETQUADANHGIA as k').join('HOSODANHGIA as g', 'g.MaHS', 'k.MaHS').join('DONVI as d', 'd.MaDV', 'g.MaDV')
     .join('LOAIDONVI as l', 'l.MaLoaiDV', 'd.MaLoaiDV').leftJoin('MUCDOCHUYENDOISO as m', 'm.MaMucDo', 'k.MaMucDo')
     .where({ 'g.MaKy': maKy })
-    .select('k.MaKQ', 'k.TongDiem', 'k.HangTheoLoai', 'k.HangChung', 'g.MaGiao', 'd.MaDV', 'd.TenDV', 'd.MaLoaiDV', 'l.TenLoaiDV', 'm.TenMucDo')
+    .select('k.MaKQ', 'k.TongDiem', 'k.HangTheoLoai', 'k.HangChung', 'g.MaHS', 'd.MaDV', 'd.TenDV', 'd.MaLoaiDV', 'l.TenLoaiDV', 'm.TenMucDo')
     .orderBy(['k.HangChung', 'd.TenDV']);
   return { Ky: ky, KetQua: ds.map((x) => ({ ...x, TongDiem: Number(x.TongDiem) })) };
 }

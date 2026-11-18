@@ -38,24 +38,24 @@ CREATE UNIQUE INDEX [nguoidung_tendangnhap_unique] ON [NGUOIDUNG] ([TenDangNhap]
 -- KYDANHGIA
 CREATE TABLE [KYDANHGIA] ([MaKy] int identity(1,1) not null primary key, [TenKy] nvarchar(200) not null, [LoaiKy] nvarchar(10) not null, [NgayBatDau] date not null, [NgayKetThuc] date not null, [HanNop] date not null, [TrangThaiKy] nvarchar(20) not null CONSTRAINT [kydanhgia_trangthaiky_default] DEFAULT 'NHAP', [NgayChot] date not null, [MaBo] int not null, CONSTRAINT [kydanhgia_mabo_foreign] FOREIGN KEY ([MaBo]) REFERENCES [BOCHISO] ([MaBo]), check (LoaiKy IN ('QUY', 'NAM')), check (TrangThaiKy IN ('NHAP', 'DANG_MO', 'DA_CHOT')), check (NgayBatDau < NgayKetThuc AND NgayKetThuc <= HanNop));
 
--- GIAODONVI
-CREATE TABLE [GIAODONVI] ([MaGiao] int identity(1,1) not null primary key, [HanGiaHan] date, [MaKy] int not null, [MaDV] int not null, CONSTRAINT [giaodonvi_maky_foreign] FOREIGN KEY ([MaKy]) REFERENCES [KYDANHGIA] ([MaKy]), CONSTRAINT [giaodonvi_madv_foreign] FOREIGN KEY ([MaDV]) REFERENCES [DONVI] ([MaDV]));
-CREATE UNIQUE INDEX [giaodonvi_maky_madv_unique] ON [GIAODONVI] ([MaKy], [MaDV]) WHERE [MaKy] IS NOT NULL AND [MaDV] IS NOT NULL;
+-- HOSODANHGIA
+CREATE TABLE [HOSODANHGIA] ([MaHS] int identity(1,1) not null primary key, [HanGiaHan] date, [MaKy] int not null, [MaDV] int not null, CONSTRAINT [hosodanhgia_maky_foreign] FOREIGN KEY ([MaKy]) REFERENCES [KYDANHGIA] ([MaKy]), CONSTRAINT [hosodanhgia_madv_foreign] FOREIGN KEY ([MaDV]) REFERENCES [DONVI] ([MaDV]));
+CREATE UNIQUE INDEX [hosodanhgia_maky_madv_unique] ON [HOSODANHGIA] ([MaKy], [MaDV]) WHERE [MaKy] IS NOT NULL AND [MaDV] IS NOT NULL;
 
 -- BAOCAOSOLIEU
-CREATE TABLE [BAOCAOSOLIEU] ([MaBC] int identity(1,1) not null primary key, [GiaTri] decimal(18, 4), [TrangThaiBC] nvarchar(20) not null CONSTRAINT [baocaosolieu_trangthaibc_default] DEFAULT 'NHAP', [NgayGui] datetime2, [MaGiao] int not null, [MaChiSo] int not null, [MaNguoiNhap] int not null, CONSTRAINT [baocaosolieu_magiao_foreign] FOREIGN KEY ([MaGiao]) REFERENCES [GIAODONVI] ([MaGiao]), CONSTRAINT [baocaosolieu_machiso_foreign] FOREIGN KEY ([MaChiSo]) REFERENCES [CHISO] ([MaChiSo]), CONSTRAINT [baocaosolieu_manguoinhap_foreign] FOREIGN KEY ([MaNguoiNhap]) REFERENCES [NGUOIDUNG] ([MaND]), check (TrangThaiBC IN ('NHAP', 'CHO_THAM_DINH', 'CAN_BO_SUNG', 'DAT')));
-CREATE UNIQUE INDEX [baocaosolieu_magiao_machiso_unique] ON [BAOCAOSOLIEU] ([MaGiao], [MaChiSo]) WHERE [MaGiao] IS NOT NULL AND [MaChiSo] IS NOT NULL;
+CREATE TABLE [BAOCAOSOLIEU] ([MaBC] int identity(1,1) not null primary key, [GiaTri] decimal(18, 4), [TrangThaiBC] nvarchar(20) not null CONSTRAINT [baocaosolieu_trangthaibc_default] DEFAULT 'NHAP', [NgayGui] datetime2, [MaHS] int not null, [MaChiSo] int not null, [MaNguoiNhap] int not null, CONSTRAINT [baocaosolieu_mahs_foreign] FOREIGN KEY ([MaHS]) REFERENCES [HOSODANHGIA] ([MaHS]), CONSTRAINT [baocaosolieu_machiso_foreign] FOREIGN KEY ([MaChiSo]) REFERENCES [CHISO] ([MaChiSo]), CONSTRAINT [baocaosolieu_manguoinhap_foreign] FOREIGN KEY ([MaNguoiNhap]) REFERENCES [NGUOIDUNG] ([MaND]), check (TrangThaiBC IN ('NHAP', 'CHO_THAM_DINH', 'CAN_BO_SUNG', 'DAT')));
+CREATE UNIQUE INDEX [baocaosolieu_mahs_machiso_unique] ON [BAOCAOSOLIEU] ([MaHS], [MaChiSo]) WHERE [MaHS] IS NOT NULL AND [MaChiSo] IS NOT NULL;
 
 -- MINHCHUNG
 CREATE TABLE [MINHCHUNG] ([MaMC] int identity(1,1) not null primary key, [TenTep] nvarchar(255) not null, [DuongDan] nvarchar(255) not null, [DungLuong] int not null, [NgayTai] datetime2 not null, [TrangThaiMC] nvarchar(20) not null CONSTRAINT [minhchung_trangthaimc_default] DEFAULT 'HIEU_LUC', [MaBC] int not null, [MaLoaiMC] int not null, CONSTRAINT [minhchung_mabc_foreign] FOREIGN KEY ([MaBC]) REFERENCES [BAOCAOSOLIEU] ([MaBC]), CONSTRAINT [minhchung_maloaimc_foreign] FOREIGN KEY ([MaLoaiMC]) REFERENCES [LOAIMINHCHUNG] ([MaLoaiMC]), check (TrangThaiMC IN ('HIEU_LUC', 'DA_THAY_THE')));
 
--- THAMDINH
-CREATE TABLE [THAMDINH] ([MaTD] int identity(1,1) not null primary key, [VongThamDinh] int not null, [KetLuan] nvarchar(20) not null, [NhanXet] nvarchar(1000), [NgayThamDinh] datetime2 not null, [MaBC] int not null, [MaChuyenVien] int not null, CONSTRAINT [thamdinh_mabc_foreign] FOREIGN KEY ([MaBC]) REFERENCES [BAOCAOSOLIEU] ([MaBC]), CONSTRAINT [thamdinh_machuyenvien_foreign] FOREIGN KEY ([MaChuyenVien]) REFERENCES [NGUOIDUNG] ([MaND]), check (KetLuan IN ('DAT', 'CHUA_DAT')), check (KetLuan <> 'CHUA_DAT' OR (NhanXet IS NOT NULL AND NhanXet <> '')));
-CREATE UNIQUE INDEX [thamdinh_mabc_vongthamdinh_unique] ON [THAMDINH] ([MaBC], [VongThamDinh]) WHERE [MaBC] IS NOT NULL AND [VongThamDinh] IS NOT NULL;
+-- PHIEUTHAMDINH
+CREATE TABLE [PHIEUTHAMDINH] ([MaPhieuTD] int identity(1,1) not null primary key, [VongThamDinh] int not null, [KetLuan] nvarchar(20) not null, [NhanXet] nvarchar(1000), [NgayThamDinh] datetime2 not null, [MaBC] int not null, [MaChuyenVien] int not null, CONSTRAINT [phieuthamdinh_mabc_foreign] FOREIGN KEY ([MaBC]) REFERENCES [BAOCAOSOLIEU] ([MaBC]), CONSTRAINT [phieuthamdinh_machuyenvien_foreign] FOREIGN KEY ([MaChuyenVien]) REFERENCES [NGUOIDUNG] ([MaND]), check (KetLuan IN ('DAT', 'CHUA_DAT')), check (KetLuan <> 'CHUA_DAT' OR (NhanXet IS NOT NULL AND NhanXet <> '')));
+CREATE UNIQUE INDEX [phieuthamdinh_mabc_vongthamdinh_unique] ON [PHIEUTHAMDINH] ([MaBC], [VongThamDinh]) WHERE [MaBC] IS NOT NULL AND [VongThamDinh] IS NOT NULL;
 
 -- KETQUADANHGIA
-CREATE TABLE [KETQUADANHGIA] ([MaKQ] int identity(1,1) not null primary key, [TongDiem] decimal(5, 2) not null, [HangTheoLoai] int not null, [HangChung] int not null, [MaGiao] int not null, [MaMucDo] int, CONSTRAINT [ketquadanhgia_magiao_foreign] FOREIGN KEY ([MaGiao]) REFERENCES [GIAODONVI] ([MaGiao]), CONSTRAINT [ketquadanhgia_mamucdo_foreign] FOREIGN KEY ([MaMucDo]) REFERENCES [MUCDOCHUYENDOISO] ([MaMucDo]), check (TongDiem >= 0 AND TongDiem <= 100));
-CREATE UNIQUE INDEX [ketquadanhgia_magiao_unique] ON [KETQUADANHGIA] ([MaGiao]) WHERE [MaGiao] IS NOT NULL;
+CREATE TABLE [KETQUADANHGIA] ([MaKQ] int identity(1,1) not null primary key, [TongDiem] decimal(5, 2) not null, [HangTheoLoai] int not null, [HangChung] int not null, [MaHS] int not null, [MaMucDo] int, CONSTRAINT [ketquadanhgia_mahs_foreign] FOREIGN KEY ([MaHS]) REFERENCES [HOSODANHGIA] ([MaHS]), CONSTRAINT [ketquadanhgia_mamucdo_foreign] FOREIGN KEY ([MaMucDo]) REFERENCES [MUCDOCHUYENDOISO] ([MaMucDo]), check (TongDiem >= 0 AND TongDiem <= 100));
+CREATE UNIQUE INDEX [ketquadanhgia_mahs_unique] ON [KETQUADANHGIA] ([MaHS]) WHERE [MaHS] IS NOT NULL;
 
 -- THONGBAO
 CREATE TABLE [THONGBAO] ([MaTB] int identity(1,1) not null primary key, [LoaiTB] nvarchar(30) not null, [NoiDung] nvarchar(500) not null, [NgayGui] datetime2 not null, [DaDoc] bit not null CONSTRAINT [thongbao_dadoc_default] DEFAULT '0', [MaND] int not null, CONSTRAINT [thongbao_mand_foreign] FOREIGN KEY ([MaND]) REFERENCES [NGUOIDUNG] ([MaND]));

@@ -5,8 +5,8 @@ import { api, taiVe } from '../api.js';
 import { useNguoi } from '../nguoi.js';
 import { BaoLoi, HopThoai, Nhan, TrangThaiTai, fmtGiaTri, fmtNgay, fmtSo, useTai, useThaoTac } from '../ui.jsx';
 
-function ChiTietDiem({ maGiao, onDong }) {
-  const t = useTai(() => api(`/ketqua/giao/${maGiao}`), [maGiao]);
+function ChiTietDiem({ maHS, onDong }) {
+  const t = useTai(() => api(`/ketqua/giao/${maHS}`), [maHS]);
   return (
     <HopThoai tieuDe="Điểm chi tiết" onDong={onDong} rong>
       <TrangThaiTai t={t}>{(d) => (
@@ -47,7 +47,7 @@ export function KetQua() {
         <tr key={k.MaKQ} className={nguoi.MaDV === k.MaDV && nguoi.MaVaiTro === 'DAU_MOI' ? 'cua-toi' : ''}>
           <td className="so"><strong>{k[cotHang]}</strong></td><td>{k.TenDV}</td>{cotHang === 'HangChung' && <td>{k.TenLoaiDV}</td>}
           <td className="so">{fmtSo(k.TongDiem)}</td><td>{k.TenMucDo || '—'}</td>
-          <td className="phai">{xemDuoc(k) && <button className="nut nho" onClick={() => setXem(k.MaGiao)}>Điểm chi tiết</button>}</td></tr>
+          <td className="phai">{xemDuoc(k) && <button className="nut nho" onClick={() => setXem(k.MaHS)}>Điểm chi tiết</button>}</td></tr>
       ))}</tbody>
     </table>
   );
@@ -70,7 +70,7 @@ export function KetQua() {
           <p className="mo">Đồng điểm thì đồng hạng.</p>
         </>
       )}</TrangThaiTai>}
-      {xem && <ChiTietDiem maGiao={xem} onDong={() => setXem(null)} />}
+      {xem && <ChiTietDiem maHS={xem} onDong={() => setXem(null)} />}
     </>
   );
 }

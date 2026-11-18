@@ -1,6 +1,6 @@
 // Tạo bảng. Chạy: npm run db:migrate   (thêm --reset để xóa hết bảng rồi tạo lại)
 const { db } = require('./db');
-const { taoBang, xoaBang } = require('./schema');
+const { taoBang, xoaBang, nangCap } = require('./schema');
 
 (async () => {
   try {
@@ -9,7 +9,9 @@ const { taoBang, xoaBang } = require('./schema');
       console.log('Đã xóa các bảng cũ.');
     }
     if (await db.schema.hasTable('BOCHISO')) {
-      console.log('CSDL đã có bảng. Dùng "npm run db:reset" nếu muốn tạo lại từ đầu.');
+      const soBuoc = await nangCap(db);
+      if (soBuoc) console.log('Đã nâng cấp CSDL cũ: GIAODONVI -> HOSODANHGIA, THAMDINH -> PHIEUTHAMDINH (giữ nguyên dữ liệu).');
+      else console.log('CSDL đã có bảng. Dùng "npm run db:reset" nếu muốn tạo lại từ đầu.');
     } else {
       await taoBang(db);
       console.log('Đã tạo 19 bảng.');

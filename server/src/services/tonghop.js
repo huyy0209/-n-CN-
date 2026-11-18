@@ -12,7 +12,7 @@ async function ketQuaDayDu(trx, maKy) {
   return {
     Ky,
     DonVi: KetQua.map((k) => {
-      const ct = chiTiet.find((c) => c.MaGiao === k.MaGiao);
+      const ct = chiTiet.find((c) => c.MaHS === k.MaHS);
       return { ...k, TongTrongSo: ct.TongTrongSo, Nhom: ct.Nhom, ChiSo: ct.ChiSo };
     }),
   };

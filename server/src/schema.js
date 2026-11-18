@@ -3,7 +3,7 @@
 const C = require('./lib/consts');
 
 const BANG = [
-  'NHATKY', 'THONGBAO', 'KETQUADANHGIA', 'THAMDINH', 'MINHCHUNG', 'BAOCAOSOLIEU', 'GIAODONVI', 'KYDANHGIA',
+  'NHATKY', 'THONGBAO', 'KETQUADANHGIA', 'PHIEUTHAMDINH', 'MINHCHUNG', 'BAOCAOSOLIEU', 'HOSODANHGIA', 'KYDANHGIA',
   'NGUOIDUNG', 'DONVI', 'VAITRO', 'MUCDOCHUYENDOISO', 'LOAIMINHCHUNG', 'BACDIEM', 'CHISO_LOAIDONVI', 'CHISO',
   'NHOMCHISO', 'LOAIDONVI', 'BOCHISO',
 ]; // thứ tự xóa: bảng con trước
@@ -114,8 +114,8 @@ dn('KYDANHGIA', (t) => {
     t.check(`TrangThaiKy IN (${trong(Object.values(C.TT_KY))})`); // RB03
     t.check('NgayBatDau < NgayKetThuc AND NgayKetThuc <= HanNop'); // RB04 (HanNop <= NgayChot kiểm tra ở dịch vụ vì NgayChot ghi lại khi chốt)
 });
-dn('GIAODONVI', (t) => {
-    t.increments('MaGiao');
+dn('HOSODANHGIA', (t) => {
+    t.increments('MaHS');
     t.date('HanGiaHan');
     t.integer('MaKy').unsigned().notNullable().references('MaKy').inTable('KYDANHGIA');
     t.integer('MaDV').unsigned().notNullable().references('MaDV').inTable('DONVI');
@@ -126,10 +126,10 @@ dn('BAOCAOSOLIEU', (t) => {
     t.decimal('GiaTri', 18, 4);
     t.string('TrangThaiBC', 20).notNullable().defaultTo('NHAP');
     t.datetime('NgayGui'); // ghi một lần ở lần gửi đầu (BR07)
-    t.integer('MaGiao').unsigned().notNullable().references('MaGiao').inTable('GIAODONVI');
+    t.integer('MaHS').unsigned().notNullable().references('MaHS').inTable('HOSODANHGIA');
     t.integer('MaChiSo').unsigned().notNullable().references('MaChiSo').inTable('CHISO');
     t.integer('MaNguoiNhap').unsigned().notNullable().references('MaND').inTable('NGUOIDUNG');
-    t.unique(['MaGiao', 'MaChiSo']); // RB10
+    t.unique(['MaHS', 'MaChiSo']); // RB10
     t.check(`TrangThaiBC IN (${trong(Object.values(C.TT_BC))})`); // RB02
 });
 dn('MINHCHUNG', (t) => {
@@ -143,8 +143,8 @@ dn('MINHCHUNG', (t) => {
     t.integer('MaLoaiMC').unsigned().notNullable().references('MaLoaiMC').inTable('LOAIMINHCHUNG');
     t.check(`TrangThaiMC IN (${trong(Object.values(C.TT_MC))})`);
 });
-dn('THAMDINH', (t) => {
-    t.increments('MaTD');
+dn('PHIEUTHAMDINH', (t) => {
+    t.increments('MaPhieuTD');
     t.integer('VongThamDinh').notNullable();
     t.string('KetLuan', 20).notNullable();
     t.string('NhanXet', 1000);
@@ -160,7 +160,7 @@ dn('KETQUADANHGIA', (t) => {
     t.decimal('TongDiem', 5, 2).notNullable();
     t.integer('HangTheoLoai').notNullable();
     t.integer('HangChung').notNullable();
-    t.integer('MaGiao').unsigned().notNullable().unique().references('MaGiao').inTable('GIAODONVI'); // RB10, 1-1
+    t.integer('MaHS').unsigned().notNullable().unique().references('MaHS').inTable('HOSODANHGIA'); // RB10, 1-1
     t.integer('MaMucDo').unsigned().references('MaMucDo').inTable('MUCDOCHUYENDOISO');
     t.check('TongDiem >= 0 AND TongDiem <= 100');
 });
@@ -184,8 +184,32 @@ async function taoBang(knex) {
   for (const [ten, ham] of DINH_NGHIA) await knex.schema.createTable(ten, ham);
 }
 
-async function xoaBang(knex) {
-  for (const b of BANG) await knex.schema.dropTableIfExists(b);
+// Nâng cấp CSDL tạo từ bản cũ: đổi tên thực thể theo báo cáo đã sửa
+// (GIAODONVI -> HOSODANHGIA, khóa MaGiao -> MaHS; THAMDINH -> PHIEUTHAMDINH, khóa MaTD -> MaPhieuTD).
+// Đổi tên tại chỗ nên giữ nguyên dữ liệu; khóa ngoại tự trỏ theo tên mới. Trả về số bước đã làm.
+async function nangCap(knex) {
+  let soBuoc = 0;
+  if (await knex.schema.hasTable('GIAODONVI') && !(await knex.schema.hasTable('HOSODANHGIA'))) {
+    await knex.schema.renameTable('GIAODONVI', 'HOSODANHGIA');
+    await knex.schema.alterTable('HOSODANHGIA', (t) => t.renameColumn('MaGiao', 'MaHS'));
+    await knex.schema.alterTable('BAOCAOSOLIEU', (t) => t.renameColumn('MaGiao', 'MaHS'));
+    await knex.schema.alterTable('KETQUADANHGIA', (t) => t.renameColumn('MaGiao', 'MaHS'));
+    soBuoc += 1;
+  }
+  if (await knex.schema.hasTable('THAMDINH') && !(await knex.schema.hasTable('PHIEUTHAMDINH'))) {
+    await knex.schema.renameTable('THAMDINH', 'PHIEUTHAMDINH');
+    await knex.schema.alterTable('PHIEUTHAMDINH', (t) => t.renameColumn('MaTD', 'MaPhieuTD'));
+    soBuoc += 1;
+  }
+  return soBuoc;
 }
 
-module.exports = { taoBang, xoaBang, BANG, DINH_NGHIA };
+async function xoaBang(knex) {
+  // Xóa cả tên bảng cũ (GIAODONVI, THAMDINH) để reset được CSDL tạo từ bản trước
+  const ds = [...BANG];
+  ds.splice(ds.indexOf('PHIEUTHAMDINH') + 1, 0, 'THAMDINH');
+  ds.splice(ds.indexOf('HOSODANHGIA') + 1, 0, 'GIAODONVI');
+  for (const b of ds) await knex.schema.dropTableIfExists(b);
+}
+
+module.exports = { taoBang, xoaBang, nangCap, BANG, DINH_NGHIA };

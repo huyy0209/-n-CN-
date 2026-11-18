@@ -24,6 +24,7 @@ async function layBo(trx, maBo) {
 }
 
 // Bộ phải ở trạng thái Nháp mới được sửa; bộ đã ban hành bị khóa, muốn đổi thì sao chép (BR14)
+// Bộ đã ban hành thì khóa: không sửa nhóm, chỉ số, bậc điểm, mức độ (RB13)
 async function yeuCauNhap(trx, maBo) {
   const bo = await trx('BOCHISO').where({ MaBo: maBo }).first();
   if (!bo) throw new Loi(404, 'Không tìm thấy bộ chỉ số.');
