@@ -3,23 +3,9 @@ setlocal
 cd /d "%~dp0"
 set "PROJECT_DIR=%~dp0"
 
-rem Prefer the portable Node 22 runtime used to install better-sqlite3.
-set "NODE22_DIR=%TEMP%\node-v22.23.4-win-x64"
-if exist "%NODE22_DIR%\node.exe" set "PATH=%NODE22_DIR%;%PATH%"
-
-where node >nul 2>nul
-if errorlevel 1 (
-  echo Khong tim thay Node.js. Hay cai Node.js 22.x va chay lai file nay.
-  pause
-  exit /b 1
-)
-
-set "NODE_MAJOR="
-for /f "tokens=1 delims=v." %%V in ('node -v 2^>nul') do set "NODE_MAJOR=%%V"
-if not "%NODE_MAJOR%"=="22" (
-  echo Du an can Node.js 22.x de tuong thich voi better-sqlite3.
-  echo Hay cai Node.js 22.x hoac khoi phuc runtime tai:
-  echo %NODE22_DIR%
+rem Dua Node.js 22 vao PATH (tu tai ban portable neu may chua co)
+call "%PROJECT_DIR%scripts\node22.bat"
+if not defined NODE22_OK (
   pause
   exit /b 1
 )

@@ -3,8 +3,11 @@ setlocal
 cd /d "%~dp0"
 
 rem Dung cung runtime Node 22 nhu start.bat
-set "NODE22_DIR=%TEMP%\node-v22.23.4-win-x64"
-if exist "%NODE22_DIR%\node.exe" set "PATH=%NODE22_DIR%;%PATH%"
+call "%~dp0scripts\node22.bat"
+if not defined NODE22_OK (
+  pause
+  exit /b 1
+)
 
 where npm >nul 2>nul
 if errorlevel 1 (
